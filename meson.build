@@ -235,6 +235,10 @@ if frontend == 'win32' and not enabled_components.contains('m68000')
     enabled_components += 'm68000'
 endif
 
+# zlib/libchdr come first: burn_hdd.cpp in the burn library reads CHD images
+subdir('src/dep/libs/zlib')
+subdir('src/dep/libs/libchdr')
+
 subdir('src/burn')
 subdir('src/cpu')
 subdir('src/burn/devices')
@@ -248,9 +252,7 @@ endforeach
 
 subdir('src/burn/drv')
 
-subdir('src/dep/libs/zlib')
 subdir('src/dep/libs/lua')
-subdir('src/dep/libs/libchdr')
 if include_7z
     subdir('src/dep/libs/lib7z')
 endif

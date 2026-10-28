@@ -35,7 +35,7 @@ all_cpu = {
     'm6805': {'desc': 'Motorola 6805', 'sources': ['m6805/m6805.cpp', 'm6805_intf.cpp'], 'inc': ['m6805']},
     'm6809': {'desc': 'Motorola 6809', 'sources': ['m6809/m6809.cpp', 'm6809_intf.cpp'], 'inc': ['m6809']},
     'mb88xx': {'desc': 'Fujitsu MB88xx', 'sources': ['mb88xx/mb88xx.cpp'], 'inc': ['mb88xx']},
-    'mips3': {'desc': 'MIPS III', 'sources': ['mips3/cop0.cpp', 'mips3/cop1.cpp', 'mips3/mips3.cpp', 'mips3_intf.cpp'], 'inc': ['mips3']},
+    'mips3': {'desc': 'MIPS III', 'sources': ['mips3/mips3.cpp', 'mips3_intf.cpp'], 'inc': ['mips3']},
     'nec': {'desc': 'NEC V30 / V33', 'sources': ['nec/nec.cpp', 'nec/v25.cpp', 'nec_intf.cpp'], 'inc': ['nec']},
     'pic16c5x': {'desc': 'Microchip PIC16C5x', 'sources': ['pic16c5x/pic16c5x.cpp', 'pic16c5x_intf.cpp'], 'inc': ['pic16c5x']},
     's2650': {'desc': 'Signetics S2650', 'sources': ['s2650/s2650.cpp', 's2650_intf.cpp'], 'inc': ['s2650']},
