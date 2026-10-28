@@ -8,6 +8,7 @@ frontend_sources = files(
     'localise_gamelist.cpp',
     'main.cpp',
     'media.cpp',
+    'memcard.cpp',
     '../cdlist.cpp',
     'replay.cpp',
     'romdata.cpp',

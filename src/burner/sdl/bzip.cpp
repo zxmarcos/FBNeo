@@ -13,6 +13,7 @@ static bool BzipHDDPresent()
 }
 
 int nBzipError = 0;                                                             // non-zero if there is a problem with the opened romset
+TCHAR szAppQuickPath[MAX_PATH] = _T("");                                      // folder of the archive of a quick load, searched first
 
 static TCHAR* szBzipName[BZIP_MAX] = { NULL, };                                 // Zip files to search through
 
@@ -509,13 +510,14 @@ int BzipOpen(bool bootApp)
 			break;
 		}
 
-		for (int d = 0; d < DIRS_MAX; d++) // Traverse the user-configured rom paths
+		for (int d = -1; d < DIRS_MAX; d++) // The folder of a quick load first, then the user-configured rom paths
 		{
+			const TCHAR* pszPath = (d < 0) ? szAppQuickPath : szAppRomPaths[d];
 			TCHAR szFullName[MAX_PATH];
-			if (strlen(szAppRomPaths[d]) == 0) 
+			if (strlen(pszPath) == 0)
 				continue;
-			
-			_stprintf(szFullName, _T("%s%hs"), szAppRomPaths[d], szName);
+
+			_stprintf(szFullName, _T("%s%hs"), pszPath, szName);
 
 			if (RomArchiveExists(szFullName))                  // Check existence of the rom zip/7z archive file
 
@@ -523,7 +525,7 @@ int BzipOpen(bool bootApp)
 				bFound = true;
 				szBzipName[z] = (TCHAR*)malloc(MAX_PATH * sizeof(TCHAR));
 				_tcscpy(szBzipName[z], szFullName);
-				_stprintf(szBzipName[z], _T("%s%hs"), szAppRomPaths[d], szName);
+				_stprintf(szBzipName[z], _T("%s%hs"), pszPath, szName);
 
 
 				if (!bootApp)

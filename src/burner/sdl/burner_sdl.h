@@ -136,6 +136,43 @@ int InputMake(bool bCopy);
 // stated.cpp
 int QuickState(int bSave);
 extern int bDrvSaveAll;
+extern int nSavestateSlot;						// 1 to 8
+const TCHAR* StatedSlotFile(int nSlot);
+int StatedLoad(int nSlot);						// 0 if done, the BurnStateLoad() codes otherwise
+int StatedSave(int nSlot);
+int StatedUNDO(int nSlot);
+int StatedLoadFile(const TCHAR* pszFile);
+int StatedSaveFile(const TCHAR* pszFile);
+int StatedFileGame(const TCHAR* pszFile, char* pszName);	// the zip name of the game of a state file
+const TCHAR* StatedFolder();
+
+// bzip.cpp
+extern TCHAR szAppQuickPath[MAX_PATH];			// folder of the archive of a quick load
+
+// memcard.cpp
+extern TCHAR szMemoryCardFile[MAX_PATH];
+extern int nMemoryCardStatus;					// & 1 = file selected, & 2 = inserted
+bool MemCardSupported();
+const TCHAR* MemCardFolder();
+int MemCardCreate(const TCHAR* pszFile);
+int MemCardSelect(const TCHAR* pszFile);
+int MemCardInsert();
+int MemCardEject();
+int MemCardToggle();
+void MemCardExit();
+extern TCHAR szPgm2CardFile[4][MAX_PATH];
+extern int nPgm2CardStatus[4];
+int MemCardPgm2Slots();						// 0 if the game has no PGM2 card slots
+int MemCardCreatePGM2Slot(int nSlot, const TCHAR* pszFile);
+int MemCardSelectPGM2Slot(int nSlot, const TCHAR* pszFile);
+int MemCardInsertPGM2Slot(int nSlot);
+int MemCardEjectPGM2Slot(int nSlot);
+
+// run.cpp
+extern bool bAppDoStep;							// frame advance while paused
+extern bool bAppDoRewind;
+extern int nSlowMo;								// 0 = normal speed, 1 to 4 slower
+extern int bAlwaysDrawFrames;
 
 //stringset.cpp
 class StringSet {

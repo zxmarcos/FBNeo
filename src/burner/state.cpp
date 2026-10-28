@@ -369,13 +369,27 @@ INT32 FileExists(const TCHAR *fileName)
     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
             !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
+#elif defined(BUILD_SDL2)
+// The same backups and undo for SDL2 (ANSI file names)
+static INT32 FileExists(const TCHAR *fileName)
+{
+	FILE* fp = _tfopen(fileName, _T("rb"));
+	if (fp) {
+		fclose(fp);
+		return 1;
+	}
+	return 0;
+}
+
+#define DeleteFileW(a)		remove(a)
+#define MoveFileW(a, b)		rename(a, b)
 #endif
 
 #define MAX_STATEBACKUPS 10
-// SaveState Undo - restores the last savestate backup file. Windows-only at the moment.
+// SaveState Undo - restores the last savestate backup file (Win32 and SDL2).
 INT32 BurnStateUNDO(TCHAR* szName)
 {
-#ifdef BUILD_WIN32
+#if defined(BUILD_WIN32) || defined(BUILD_SDL2)
          /*
          Savestate Undo
          derp.fs.backup0 -> derp.fs
@@ -431,7 +445,7 @@ INT32 BurnStateSave(TCHAR* szName, INT32 bAll)
 		return 0;										// Don't return an error code
 	}
 
-#ifdef BUILD_WIN32
+#if defined(BUILD_WIN32) || defined(BUILD_SDL2)
 	/*
 	 Save State backups - used in conjunction with BurnStateUNDO();
 	 derp.fs -> derp.fs.backup
