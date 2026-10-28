@@ -48,10 +48,14 @@ frontend_deps = [
 
 if get_option('sdl_gui') == 'imgui'
     frontend_sources += files(
+        '../gamelist_model.cpp',
         'ui/ui_app.cpp',
         'ui/ui_core.cpp',
+        'ui/ui_filebrowser.cpp',
         'ui/ui_gamesel.cpp',
+        'ui/ui_image.cpp',
         'ui/ui_menubar.cpp',
+        'ui/ui_paths.cpp',
         'ui/ui_popup.cpp',
     )
 
@@ -71,7 +75,11 @@ if get_option('sdl_gui') == 'imgui'
         include_directories: include_directories(imgui_dir, imgui_dir / 'backends'),
         dependencies: dependency('sdl2'),
     )
-    frontend_inc += ['ui', imgui_dir, imgui_dir / 'backends']
+    # zip.h for the preview and icon archives (zip.c is in the burner lib)
+    frontend_inc += ['ui', imgui_dir, imgui_dir / 'backends', '../../dep/libs/zip']
+    if cpp.get_id() == 'msvc'
+        frontend_inc += '../../dep/vc/include'		# dirent.h, for the file browser
+    endif
     frontend_deps += declare_dependency(link_with: imgui_lib)
 endif
 

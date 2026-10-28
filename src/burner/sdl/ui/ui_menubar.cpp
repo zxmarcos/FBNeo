@@ -169,6 +169,33 @@ static void MiscMenu()
 	if (ImGui::MenuItem("Save High Scores", NULL, EnableHiscores != 0)) {
 		EnableHiscores = !EnableHiscores;
 	}
+	ImGui::Separator();
+	if (ImGui::BeginMenu("Selector Icons")) {
+		if (ImGui::MenuItem("Show Icons", NULL, bEnableIcons)) {
+			bEnableIcons = !bEnableIcons;
+		}
+		ImGui::Separator();
+		static const char* pszSizes[] = { "16 x 16", "24 x 24", "32 x 32" };
+		for (int i = 0; i < 3; i++) {
+			if (ImGui::MenuItem(pszSizes[i], NULL, nIconsSize == i, bEnableIcons)) {
+				nIconsSize = i;
+			}
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("Only for the Parents", NULL, bIconsOnlyParents, bEnableIcons && !bIconsByHardwares)) {
+			bIconsOnlyParents = !bIconsOnlyParents;
+		}
+		if (ImGui::MenuItem("By Hardware", NULL, bIconsByHardwares, bEnableIcons)) {
+			bIconsByHardwares = !bIconsByHardwares;
+		}
+		ImGui::EndMenu();
+	}
+	if (ImGui::MenuItem("ROM Paths...")) {
+		UiRomPathsOpen();
+	}
+	if (ImGui::MenuItem("Support Paths...")) {
+		UiSupportPathsOpen();
+	}
 }
 
 static void HelpMenu()
@@ -212,7 +239,7 @@ static void ShortcutsPopup()
 			}
 			ImGui::EndTable();
 		}
-		if (ImGui::Button("Close") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+		if (ImGui::Button("Close") || UiEscapePressed()) {
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SetItemDefaultFocus();
@@ -240,7 +267,7 @@ static void AboutPopup()
 		ImGui::Spacing();
 		ImGui::TextUnformatted("Usage is restricted by the license in src/license.txt");
 		ImGui::Spacing();
-		if (ImGui::Button("Close") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+		if (ImGui::Button("Close") || UiEscapePressed()) {
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SetItemDefaultFocus();

@@ -145,6 +145,7 @@ static void StopGame()
 
 static void StartGame(int nDrv)
 {
+	UiGameSelStopScan();				// the rom scan thread uses nBurnDrvActive
 	StopGame();
 	UiGameSelClose();
 
@@ -529,6 +530,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 			DrawOverlay();
 			DrawOsd();
 		}
+		UiPathsDraw();
 		UiPopupsDraw();
 
 		UiPresent(bGameRunning);

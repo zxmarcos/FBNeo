@@ -2,6 +2,7 @@
 #include "burner.h"
 #ifdef BUILD_SDL2_IMGUI
 #include "ui.h"
+#include "gamelist_model.h"
 #endif
 
 int nIniVersion = 0;
@@ -124,6 +125,27 @@ int ConfigAppLoad()
 		VAR(bUiPauseOnMenu);
 		VAR(bUiPauseOnFocusLoss);
 		VAR(nAudVolume);
+		{
+			char *szValue = LabelCheck(szLine, "nLoadMenuShowX");
+			if (szValue) nLoadMenuShowX = strtoull(szValue, NULL, 0);
+		}
+		VAR(nLoadMenuShowY);
+		VAR(nLoadMenuBoardTypeFilter);
+		VAR(nLoadMenuGenreFilter);
+		VAR(nLoadMenuFamilyFilter);
+		VAR(nLoadMenuFavoritesFilter);
+		VAR(nLoadMenuExpand);
+		STR(szSelSearch);
+		VAR(bEnableIcons);
+		VAR(nIconsSize);
+		VAR(bIconsOnlyParents);
+		VAR(bIconsByHardwares);
+		for (int i = 0; i < 6; i++) {
+			char szLabel[32];
+			snprintf(szLabel, sizeof(szLabel), "szSelMvsCarts[%d] ", i);
+			char *szValue = LabelCheck(szLine, szLabel);
+			if (szValue) snprintf(szSelMvsCarts[i], sizeof(szSelMvsCarts[i]), "%s", szValue);
+		}
 #endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
@@ -240,6 +262,25 @@ int ConfigAppSave()
 	VAR(bUiPauseOnFocusLoss);
 	fprintf(f, "\n// Sound volume (0 - 10000)\n");
 	VAR(nAudVolume);
+	fprintf(f, "\n// Game selector filters, a set bit hides the games that have it (the same as the Win32 build)\n");
+	fprintf(f, "nLoadMenuShowX 0x%016llX\n", (unsigned long long)nLoadMenuShowX);
+	VAR(nLoadMenuShowY);
+	VAR(nLoadMenuBoardTypeFilter);
+	VAR(nLoadMenuGenreFilter);
+	VAR(nLoadMenuFamilyFilter);
+	VAR(nLoadMenuFavoritesFilter);
+	VAR(nLoadMenuExpand);
+	fprintf(f, "\n// Game selector search\n");
+	STR(szSelSearch);
+	fprintf(f, "\n// Game selector icons, size 0 = 16, 1 = 24, 2 = 32 pixels\n");
+	VAR(bEnableIcons);
+	VAR(nIconsSize);
+	VAR(bIconsOnlyParents);
+	VAR(bIconsByHardwares);
+	fprintf(f, "\n// The cartridges in the slots of the Neo Geo MVS system\n");
+	for (int i = 0; i < 6; i++) {
+		fprintf(f, "szSelMvsCarts[%d] %s\n", i, szSelMvsCarts[i]);
+	}
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);
