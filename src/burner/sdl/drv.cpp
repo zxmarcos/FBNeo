@@ -28,10 +28,8 @@ static void NeoCDZRateChange()
 	}
 }
 
-static int DoLibInit()                  // Do Init of Burn library driver
+static void DrvBzipOpen()
 {
-	int nRet;
-
 	BzipOpen(false);
 
 #ifdef BUILD_SDL2_IMGUI
@@ -43,6 +41,32 @@ static int DoLibInit()                  // Do Init of Burn library driver
 		AppError(BzipDetail.szText, BzipStatus() == BZIP_STATUS_BADDATA);
 	}
 #endif
+}
+
+// The Neo Geo MVS system loads the cartridges of nBurnDrvSelect[] through this
+static int __cdecl DrvCartridgeAccess(BurnCartrigeCommand nCommand)
+{
+	switch (nCommand) {
+		case CART_INIT_START:
+			DrvBzipOpen();
+			break;
+		case CART_INIT_END:
+			BzipClose();
+			break;
+		case CART_EXIT:
+			break;
+		default:
+			return 1;
+	}
+
+	return 0;
+}
+
+static int DoLibInit()                  // Do Init of Burn library driver
+{
+	int nRet;
+
+	DrvBzipOpen();
 
 	//ProgressCreate();
 
@@ -95,6 +119,16 @@ int DrvInit(int nDrvNum, bool bRestore)
 	MediaExit();
 
 	nBurnDrvActive = nDrvNum;		// Set the driver number
+
+	if ((BurnDrvGetHardwareCode() & HARDWARE_PUBLIC_MASK) == HARDWARE_SNK_MVS) {
+		BurnExtCartridgeSetupCallback = DrvCartridgeAccess;
+
+		if (nBurnDrvSelect[0] >= nBurnDrvCount) {
+			TCHAR szText[] = _T("No driver has been selected for slot 1 of the Neo Geo MVS.\n");
+			AppError(szText, 0);
+			return 1;
+		}
+	}
 
 	INT32 nHardware = BurnDrvGetHardwareCode() & HARDWARE_PUBLIC_MASK;
 	if (nHardware == HARDWARE_SNK_NEOCD || nHardware == HARDWARE_PCENGINE_PCE_CD) {
