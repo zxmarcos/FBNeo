@@ -143,6 +143,9 @@ static bool MMXSupport()
 	#if defined (BUILD_WIN32) && defined (BUILD_X64_EXE) && !defined (_M_ARM64)
 		return 1;
 	#endif
+	#if defined (BUILD_SDL2)
+		return 1;		// the SDL2 interface only offers the effects that have a C version
+	#endif
 	return 0;
 #endif
 }

@@ -61,6 +61,18 @@ if get_option('sdl_gui') == 'imgui'
         'ui/ui_menubar.cpp',
         'ui/ui_paths.cpp',
         'ui/ui_popup.cpp',
+        'ui/ui_video.cpp',
+        # the software effects of Video > Software Effect
+        '../../intf/video/vid_softfx.cpp',
+        '../../intf/video/scalers/2xpm.cpp',
+        '../../intf/video/scalers/2xsai.cpp',
+        '../../intf/video/scalers/crt.cpp',
+        '../../intf/video/scalers/ddt3x.cpp',
+        '../../intf/video/scalers/epx.cpp',
+        '../../intf/video/scalers/hq2xs.cpp',
+        '../../intf/video/scalers/hq2xs_16.cpp',
+        '../../intf/video/scalers/xbr.cpp',
+        '../../intf/video/scalers/xbr32.cpp',
     )
 
     # Dear ImGui with the SDL2 + SDL_Renderer backends, built on its own so

@@ -49,8 +49,68 @@ SDL_Window* sdlWindow = NULL;
 #endif
 
 #define set_commandline_option_not_config(i,v) i = v;
-#define set_commandline_option(i,v) i = v; bSaveconfig = 0;
-#define set_commandline_option_string(i, v, length) snprintf(i, length, v); bSaveconfig = 0;
+#ifdef BUILD_SDL2_IMGUI
+// The video options of the command line are used for this run, over the ini,
+// which keeps its own values unless they are changed in the menus
+enum { CL_VSYNC, CL_INTEGERSCALE, CL_WINDOWSCALE, CL_FULLSCREEN, CL_FILTER, CL_COUNT };
+static int nCmdLine[CL_COUNT] = { -1, -1, -1, -1, -1 };		// -1 = not given
+static int nCmdLineIni[CL_COUNT];
+static bool bCmdLineSwapped[CL_COUNT];
+
+static int CmdLineGet(int n)
+{
+	switch (n) {
+		case CL_VSYNC:			return vsync;
+		case CL_INTEGERSCALE:	return bIntegerScale;
+		case CL_WINDOWSCALE:	return nWindowScale;
+		case CL_FULLSCREEN:		return bAppFullscreen;
+		case CL_FILTER:			return videofiltering[0] - '0';
+	}
+	return 0;
+}
+
+static void CmdLineSet(int n, int v)
+{
+	switch (n) {
+		case CL_VSYNC:			vsync = v; break;
+		case CL_INTEGERSCALE:	bIntegerScale = v != 0; break;
+		case CL_WINDOWSCALE:	nWindowScale = v; break;
+		case CL_FULLSCREEN:		bAppFullscreen = v != 0; break;
+		case CL_FILTER:			snprintf(videofiltering, 3, "%d", v); break;
+	}
+}
+
+// After ConfigAppLoad()
+static void CmdLineOptionsApply()
+{
+	for (int n = 0; n < CL_COUNT; n++) {
+		if (nCmdLine[n] >= 0) {
+			nCmdLineIni[n] = CmdLineGet(n);
+			CmdLineSet(n, nCmdLine[n]);
+		}
+	}
+}
+
+// ConfigAppSave(): the ini values in place of the options still as the command line gave them
+void CmdLineOptionsForSave(bool bSave)
+{
+	for (int n = 0; n < CL_COUNT; n++) {
+		if (bSave) {
+			bCmdLineSwapped[n] = nCmdLine[n] >= 0 && CmdLineGet(n) == nCmdLine[n];
+			if (bCmdLineSwapped[n]) CmdLineSet(n, nCmdLineIni[n]);
+		} else if (bCmdLineSwapped[n]) {
+			CmdLineSet(n, nCmdLine[n]);
+			bCmdLineSwapped[n] = false;
+		}
+	}
+}
+
+#define set_commandline_option(i,v,n) nCmdLine[n] = v;
+#define set_commandline_option_string(i, v, length, n) nCmdLine[n] = atoi(v);
+#else
+#define set_commandline_option(i,v,n) i = v; bSaveconfig = 0;
+#define set_commandline_option_string(i, v, length, n) snprintf(i, length, v); bSaveconfig = 0;
+#endif
 
 int parseSwitches(int argc, char* argv[])
 {
@@ -71,11 +131,11 @@ int parseSwitches(int argc, char* argv[])
 		}
 		else if (strcmp(argv[i], "-novsync") == 0)
 		{
-			set_commandline_option(vsync, 0);
+			set_commandline_option(vsync, 0, CL_VSYNC);
 		}
 		else if (strcmp(argv[i], "-integerscale") == 0)
 		{
-			set_commandline_option(bIntegerScale, 1);
+			set_commandline_option(bIntegerScale, 1, CL_INTEGERSCALE);
 		}
 		else if (strcmp(argv[i], "-windowscale") == 0)
 		{
@@ -91,7 +151,7 @@ int parseSwitches(int argc, char* argv[])
 			{
 				return 1;
 			}
-			set_commandline_option(nWindowScale, num);
+			set_commandline_option(nWindowScale, num, CL_WINDOWSCALE);
 		}
 		else if (strcmp(argv[i], "-dat") == 0)
 		{
@@ -99,19 +159,19 @@ int parseSwitches(int argc, char* argv[])
 		}
 		else if (strcmp(argv[i], "-fullscreen") == 0)
 		{
-			set_commandline_option(bAppFullscreen, 1);
+			set_commandline_option(bAppFullscreen, 1, CL_FULLSCREEN);
 		}
 		else if (strcmp(argv[i], "-nearest") == 0)
 		{
-			set_commandline_option_string(videofiltering, "0", 3);
+			set_commandline_option_string(videofiltering, "0", 3, CL_FILTER);
 		}
 		else if (strcmp(argv[i], "-linear") == 0)
 		{
-			set_commandline_option_string(videofiltering, "1", 3);
+			set_commandline_option_string(videofiltering, "1", 3, CL_FILTER);
 		}
 		else if (strcmp(argv[i], "-best") == 0)
 		{
-			set_commandline_option_string(videofiltering, "2", 3);
+			set_commandline_option_string(videofiltering, "2", 3, CL_FILTER);
 		}
 		else if (strcmp(argv[i], "-autosave") == 0)
 		{
@@ -453,6 +513,9 @@ int main(int argc, char* argv[])
 		#endif
 		ConfigAppSave();		// for SDL2 this will also create folders in ~/.local/share/fbneo/
 	}
+#ifdef BUILD_SDL2_IMGUI
+	CmdLineOptionsApply();
+#endif
 	ComputeGammaLUT();
 #if defined(BUILD_SDL2)
 	bprintf = AppDebugPrintf;
