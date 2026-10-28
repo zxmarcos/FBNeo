@@ -210,6 +210,10 @@ int DrvExit()
 			}
 
 			MemCardExit();                                         // Write the memory cards back
+#ifdef BUILD_SDL2_IMGUI
+			extern bool bUiAutoSaveInputs;                         // Misc > Auto-Save Input Mapping, ui/ui_misc.cpp
+			if (bUiAutoSaveInputs)
+#endif
 			ConfigGameSave(bSaveInputs);
 			GameInpExit();                                         // Exit game input
 			BurnDrvExit();                                         // Exit the driver

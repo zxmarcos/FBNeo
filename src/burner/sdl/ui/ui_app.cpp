@@ -44,6 +44,7 @@ bool UiGamePaused()				{ return bUserPause; }
 bool UiMenuMode()				{ return bMenuMode; }
 bool UiOverlayShown()			{ return bOverlay; }
 void UiTogglePause()			{ bUserPause = !bUserPause; }
+void UiSetPause(bool bPause)	{ bUserPause = bPause; }
 
 void UiShowOverlay(bool bShow)
 {
@@ -331,10 +332,14 @@ static void GameHotkey(int nAction, const SDL_KeyboardEvent& key)
 		case UI_HK_FPS:				bAppShowFPS = !bAppShowFPS; break;
 		case UI_HK_SCREENSHOT:
 			if (!bScreenshotHeld) {
-				MakeScreenShot(0);
+				UiSnapshot(0);
 				bScreenshotHeld = true;
 			}
 			break;
+		case UI_HK_SNAP_TITLE:		UiSnapshot(1); break;
+		case UI_HK_SNAP_PREVIEW:	UiSnapshot(2); break;
+		case UI_HK_SHOT_FACTORY:	UiShotFactoryOpen(); break;
+		case UI_HK_PALETTE:			UiPaletteViewerToggle(); break;
 		case UI_HK_MUTE:			UiToggleMute(); break;
 		case UI_HK_VOLUME_UP:		ChangeVolume(500); break;
 		case UI_HK_VOLUME_DOWN:		ChangeVolume(-500); break;
@@ -431,7 +436,7 @@ static void UpdateState()
 		return;
 	}
 
-	bool bDialogs = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel) || UiPopupActive() || UiGameSelIsOpen();
+	bool bDialogs = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel) || UiPopupActive() || UiGameSelIsOpen() || UiMiscCapture();
 	bool bCapture = bOverlay || bDialogs;
 
 	SetPaused(bUserPause || (bUiPauseOnMenu && bCapture) || (bUiPauseOnFocusLoss && bFocusLost));
@@ -479,7 +484,7 @@ static void DrawOverlay()
 		if (ImGui::Button(szLabel, button)) { StatedSave(nSavestateSlot); bOpen = false; }
 		snprintf(szLabel, sizeof(szLabel), "Load State from Slot %d (F9)", nSavestateSlot);
 		if (ImGui::Button(szLabel, button)) { StatedLoad(nSavestateSlot); bOpen = false; }
-		if (ImGui::Button("Save Screenshot (F6)", button)) { MakeScreenShot(0); bOpen = false; }
+		if (ImGui::Button("Save Screenshot (F6)", button)) { UiSnapshot(0); bOpen = false; }
 		if (ImGui::Button("Reset", button)) { do_reset_game = true; bOpen = false; }
 		ImGui::Separator();
 		if (ImGui::Button("Map Game Inputs...", button)) { UiInputMappingOpen(); bOpen = false; }
@@ -512,8 +517,10 @@ static void DrawOsd()
 
 	const char* pszLines[3];
 	int nLines = 0;
-	if (bAppDoFast) pszLines[nLines++] = "FFWD";
-	if (bPaused && !bOverlay) pszLines[nLines++] = "PAUSE";
+	if (bUiShowModeIndicator) {
+		if (bAppDoFast) pszLines[nLines++] = "FFWD";
+		if (bPaused && !bOverlay) pszLines[nLines++] = "PAUSE";
+	}
 	if (messageFrames > 1) {
 		pszLines[nLines++] = lastMessage;
 		messageFrames--;
@@ -549,6 +556,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 		UiVideoApplyFullscreen();		// on the display picked for the fullscreen
 	}
 	UiGameSelInit();
+	UiFirstRunCheck();
 
 	SDL_GameControllerEventState(SDL_ENABLE);
 	SDL_JoystickEventState(SDL_ENABLE);
@@ -607,6 +615,8 @@ int UiMain(int nDrvSelect, bool bMenu)
 		UiInputDialogsDraw();
 		UiHotkeysDraw();
 		UiPathsDraw();
+		UiGameInfoDraw();
+		UiMiscDialogsDraw();
 		UiPopupsDraw();
 
 		UiPresent(bGameRunning);

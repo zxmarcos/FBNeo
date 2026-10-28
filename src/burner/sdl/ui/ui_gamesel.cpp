@@ -200,6 +200,47 @@ void UiGameSelStopScan()
 static bool bScanResume = false;
 static bool bRescanPending = false;			// the rom paths changed while a game was running
 
+void UiGameSelPauseScan()
+{
+	bool bWasScanning = Scanning();
+	UiGameSelStopScan();
+	if (bWasScanning && SDL_AtomicGet(&nScanNext) < (int)nBurnDrvCount) {
+		bScanResume = true;
+	}
+}
+
+int UiGameSelCheckRoms(int nDrv, char* pszText, int nSize)
+{
+	extern StringSet BzipText, BzipDetail;	// bzip.cpp
+
+	UiGameSelPauseScan();
+	UINT32 nOldDrv = nBurnDrvActive;
+	nBurnDrvActive = nDrv;
+
+	int nAv;
+	switch (BzipOpen(false)) {
+		case 0:  nAv = GAMELIST_AV_OK; break;
+		case 2:  nAv = GAMELIST_AV_OPTIONAL; break;
+		default: nAv = GAMELIST_AV_MISSING; break;
+	}
+	snprintf(pszText, nSize, "%s%s", BzipText.szText ? BzipText.szText : "", BzipDetail.szText ? BzipDetail.szText : "");
+	BzipClose();
+	nBurnDrvActive = nOldDrv;
+
+	if (pGameListAv) {
+		pGameListAv[nDrv] = nAv;
+		WriteGameAvb();
+		bNeedBuild = true;
+	}
+
+	return nAv;
+}
+
+void UiGameSelRefresh()
+{
+	bNeedBuild = true;
+}
+
 static void ScanPoll()
 {
 	if (Scanning()) {
@@ -557,6 +598,9 @@ static void RowContextMenu(int nDrv)
 			if (nLoadMenuFavoritesFilter) {
 				bNeedBuild = true;
 			}
+		}
+		if (ImGui::MenuItem("Game Info...")) {
+			UiGameInfoOpen(nDrv);
 		}
 #if SDL_VERSION_ATLEAST(2, 0, 14)
 		if (ImGui::MenuItem("View in Arcade Database")) {
@@ -1300,8 +1344,13 @@ void UiGameSelDraw(bool bOverRunningGame)
 		ImGui::TextDisabled("Showing %d of %d sets [%d Unavailable sets]", nGameListShown, nGameListTotal, nGameListMissing);
 
 		float fButton = 120.0f * fUiScale;
-		ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - fButton * (bOverRunningGame ? 2.0f : 1.0f) - (bOverRunningGame ? style.ItemSpacing.x : 0.0f));
+		int nButtons = bOverRunningGame ? 3 : 2;
+		ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - fButton * nButtons - style.ItemSpacing.x * (nButtons - 1));
 		ImGui::BeginDisabled(nSelected < 0);
+		if (ImGui::Button("Game Info", ImVec2(fButton, 0.0f))) {
+			UiGameInfoOpen(nSelected);
+		}
+		ImGui::SameLine();
 		if (ImGui::Button("Play", ImVec2(fButton, 0.0f))) {
 			TryLaunch(nSelected);
 		}
@@ -1385,7 +1434,7 @@ void UiGameSelInit()
 	bScrollToSelected = true;
 	bNeedBuild = true;
 
-	if (ReadGameAvb()) {
+	if (ReadGameAvb() && bUiScanAtStart) {
 		UiGameSelRescan();
 	}
 }

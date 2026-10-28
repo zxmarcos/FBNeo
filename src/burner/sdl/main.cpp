@@ -81,7 +81,7 @@ static void CmdLineSet(int n, int v)
 }
 
 // After ConfigAppLoad()
-static void CmdLineOptionsApply()
+void CmdLineOptionsApply()
 {
 	for (int n = 0; n < CL_COUNT; n++) {
 		if (nCmdLine[n] >= 0) {
@@ -187,7 +187,7 @@ int parseSwitches(int argc, char* argv[])
 }
 
 // Creates every directory of the path
-static void MakeDirs(const char* pszPath)
+void MakeDirs(const char* pszPath)
 {
 	char szDir[MAX_PATH];
 	snprintf(szDir, sizeof(szDir), "%s", pszPath);
@@ -209,6 +209,33 @@ static void MakeDirs(const char* pszPath)
 	}
 }
 
+// The dat files of -dat and of Misc > Generate Dat Files
+const DatSystem DatSystems[] = {
+#if defined(ALT_DAT)
+	{ "All systems",					"FBNeo_-_ALL_SYSTEMS.dat",							-1 },
+#endif
+	{ "Arcade",							"FBNeo_-_Arcade.dat",								DAT_ARCADE_ONLY },
+	{ "Mega Drive",						"FBNeo_-_MegaDrive.dat",							DAT_MEGADRIVE_ONLY },
+	{ "PC Engine",						"FBNeo_-_PC_ENGINE.dat",							DAT_PCENGINE_ONLY },
+	{ "TurboGrafx-16",					"FBNeo_-_TurboGrafx-16.dat",						DAT_TG16_ONLY },
+	{ "PC Engine SuperGrafx",			"FBNeo_-_PC_Engine_SuperGrafx.dat",					DAT_SGX_ONLY },
+	{ "Sega SG-1000",					"FBNeo_-_Sega_SG-1000.dat",							DAT_SG1000_ONLY },
+	{ "ColecoVision",					"FBNeo_-_ColecoVision.dat",							DAT_COLECO_ONLY },
+	{ "Sega Master System",				"FBNeo_-_Sega_Master_System.dat",					DAT_MASTERSYSTEM_ONLY },
+	{ "Sega Game Gear",					"FBNeo_-_Sega_Game_Gear.dat",						DAT_GAMEGEAR_ONLY },
+	{ "MSX",							"FBNeo_-_MSX.dat",									DAT_MSX_ONLY },
+	{ "ZX Spectrum",					"FBNeo_-_Sinclair_ZX_Spectrum.dat",					DAT_SPECTRUM_ONLY },
+	{ "Neo Geo",						"FBNeo_-_Neogeo.dat",								DAT_NEOGEO_ONLY },
+	{ "NES",							"FBNeo_-_Nintendo_Entertainment_System.dat",		DAT_NES_ONLY },
+	{ "Famicom Disk System",			"FBNeo_-_Nintendo_Famicom_Disk_System.dat",			DAT_FDS_ONLY },
+	{ "SNES",							"FBNeo_-_Super_Nintendo_Entertainment_System.dat",	DAT_SNES_ONLY },
+	{ "Game Boy Advance",				"FBNeo_-_Nintendo_Game_Boy_Advance.dat",			DAT_GBA_ONLY },
+	{ "Neo Geo Pocket",					"FBNeo_-_Neo_Geo_Pocket.dat",						DAT_NGP_ONLY },
+	{ "Fairchild Channel F",			"FBNeo_-_Fairchild_Channel_F.dat",					DAT_CHANNELF_ONLY },
+	{ "Bally Astrocade",				"FBNeo_-_Bally_Astrocade.dat",						DAT_ASTROHOME_ONLY },
+};
+const int nDatSystems = sizeof(DatSystems) / sizeof(DatSystems[0]);
+
 void generateDats()
 {
 	char filename[1024] = { 0 };
@@ -216,125 +243,17 @@ void generateDats()
 #if defined(BUILD_SDL2)
 	MakeDirs(szAppDatListsPath);
 	printf("Creating fbneo dats in %s\n", szAppDatListsPath);
-#if defined(ALT_DAT)
-	_stprintf(filename, _T("%sFBNeo_-_ALL_SYSTEMS.dat"), szAppDatListsPath);
-	create_datfile(filename, -1);
-#endif
-	_stprintf(filename, _T("%sFBNeo_-_Arcade.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_ARCADE_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_MegaDrive.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_MEGADRIVE_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_PC_ENGINE.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_PCENGINE_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_TurboGrafx-16.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_TG16_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_PC_Engine_SuperGrafx.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_SGX_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Sega_SG-1000.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_SG1000_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_ColecoVision.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_COLECO_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Sega_Master_System.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_MASTERSYSTEM_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Sega_Game_Gear.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_GAMEGEAR_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_MSX.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_MSX_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Sinclair_ZX_Spectrum.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_SPECTRUM_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Neogeo.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_NEOGEO_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Nintendo_Entertainment_System.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_NES_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Nintendo_Famicom_Disk_System.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_FDS_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Super_Nintendo_Entertainment_System.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_SNES_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Neo_Geo_Pocket.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_NGP_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Fairchild_Channel_F.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_CHANNELF_ONLY);
-
-	_stprintf(filename, _T("%sFBNeo_-_Bally_Astrocade.dat"), szAppDatListsPath);
-	create_datfile(filename, DAT_ASTROHOME_ONLY);
-
+	const char* pszFolder = szAppDatListsPath;
 #else
 	printf("Creating fbneo dats\n");
-
-#if defined(ALT_DAT)
-	sprintf(filename, "FBNeo_-_ALL_SYSTEMS.dat");
-	create_datfile(filename, -1);
+	const char* pszFolder = "";
 #endif
-	sprintf(filename, "FBNeo_-_Arcade.dat");
-	create_datfile(filename, DAT_ARCADE_ONLY);
 
-	sprintf(filename, "FBNeo_-_MegaDrive.dat");
-	create_datfile(filename, DAT_MEGADRIVE_ONLY);
-
-	sprintf(filename, "FBNeo_-_PC_ENGINE.dat");
-	create_datfile(filename, DAT_PCENGINE_ONLY);
-
-	sprintf(filename, "FBNeo_-_TurboGrafx-16.dat");
-	create_datfile(filename, DAT_TG16_ONLY);
-
-	sprintf(filename, "FBNeo_-_PC_Engine_SuperGrafx.dat");
-	create_datfile(filename, DAT_SGX_ONLY);
-
-	sprintf(filename, "FBNeo_-_Sega_SG-1000.dat");
-	create_datfile(filename, DAT_SG1000_ONLY);
-
-	sprintf(filename, "FBNeo_-_ColecoVision.dat");
-	create_datfile(filename, DAT_COLECO_ONLY);
-
-	sprintf(filename, "FBNeo_-_Sega_Master_System.dat");
-	create_datfile(filename, DAT_MASTERSYSTEM_ONLY);
-
-	sprintf(filename, "FBNeo_-_Sega_Game_Gear.dat");
-	create_datfile(filename, DAT_GAMEGEAR_ONLY);
-
-	sprintf(filename, "FBNeo_-_MSX.dat");
-	create_datfile(filename, DAT_MSX_ONLY);
-
-	sprintf(filename, "FBNeo_-_Sinclair_ZX_Spectrum.dat");
-	create_datfile(filename, DAT_SPECTRUM_ONLY);
-
-	sprintf(filename, "FBNeo_-_Neogeo.dat");
-	create_datfile(filename, DAT_NEOGEO_ONLY);
-
-	sprintf(filename, "FBNeo_-_Nintendo_Entertainment_System.dat");
-	create_datfile(filename, DAT_NES_ONLY);
-
-	sprintf(filename, "FBNeo_-_Nintendo_Famicom_Disk_System.dat");
-	create_datfile(filename, DAT_FDS_ONLY);
-
-	sprintf(filename, "FBNeo_-_Super_Nintendo_Entertainment_System.dat");
-	create_datfile(filename, DAT_SNES_ONLY);
-
-	sprintf(filename, "FBNeo_-_Neo_Geo_Pocket.dat");
-	create_datfile(filename, DAT_NGP_ONLY);
-
-	sprintf(filename, "FBNeo_-_Fairchild_Channel_F.dat");
-	create_datfile(filename, DAT_CHANNELF_ONLY);
-
-	sprintf(filename, "FBNeo_-_Bally_Astrocade.dat");
-	create_datfile(filename, DAT_ASTROHOME_ONLY);
-#endif
+	for (int i = 0; i < nDatSystems; i++)
+	{
+		snprintf(filename, sizeof(filename), "%s%s", pszFolder, DatSystems[i].pszFile);
+		create_datfile(filename, DatSystems[i].nType);
+	}
 }
 
 

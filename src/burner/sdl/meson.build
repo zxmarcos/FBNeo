@@ -49,16 +49,19 @@ frontend_deps = [
 
 if get_option('sdl_gui') == 'imgui'
     frontend_sources += files(
+        '../gameinfo_text.cpp',
         '../gamelist_model.cpp',
         'ui/ui_app.cpp',
         'ui/ui_core.cpp',
         'ui/ui_filebrowser.cpp',
         'ui/ui_game.cpp',
+        'ui/ui_gameinfo.cpp',
         'ui/ui_gamesel.cpp',
         'ui/ui_hotkeys.cpp',
         'ui/ui_image.cpp',
         'ui/ui_input.cpp',
         'ui/ui_menubar.cpp',
+        'ui/ui_misc.cpp',
         'ui/ui_paths.cpp',
         'ui/ui_popup.cpp',
         'ui/ui_video.cpp',
@@ -73,6 +76,20 @@ if get_option('sdl_gui') == 'imgui'
         '../../intf/video/scalers/hq2xs_16.cpp',
         '../../intf/video/scalers/xbr.cpp',
         '../../intf/video/scalers/xbr32.cpp',
+    )
+
+    # the license text of Help > About
+    frontend_sources += custom_target(
+        'license_text_h',
+        input: meson.project_source_root() / 'src/license.txt',
+        output: 'license_text.h',
+        command: [
+            python,
+            meson.project_source_root() / 'src/dep/scripts/license2h.py',
+            '@INPUT@',
+            '-o', '@OUTPUT@',
+        ],
+        depend_files: files('../../dep/scripts/license2h.py'),
     )
 
     # Dear ImGui with the SDL2 + SDL_Renderer backends, built on its own so

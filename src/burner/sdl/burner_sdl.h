@@ -57,6 +57,16 @@ extern int nJoystickCount;
 #endif
 extern TCHAR* GetIsoPath();
 
+void MakeDirs(const char* pszPath);				// every directory of the path
+
+struct DatSystem {
+	const char* pszName;
+	const char* pszFile;							// in szAppDatListsPath
+	int nType;										// DAT_*_ONLY
+};
+extern const DatSystem DatSystems[];
+extern const int nDatSystems;
+
 TCHAR* ANSIToTCHAR(const char* pszInString, TCHAR* pszOutString, int nOutSize);
 char* TCHARToANSI(const TCHAR* pszInString, char* pszOutString, int nOutSize);
 
