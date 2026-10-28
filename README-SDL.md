@@ -43,6 +43,10 @@ With make it is opt-in for now: `make INCLUDE_IMGUI=1 sdl2`.
 
 The DIPs, cheats and input mapping still use the old menus (Game > DIPs, Cheats, Input Mapping...).
 
+The game selector has the filters of the Windows build (board type, family, genre, hardware, favorites), the parent/clone tree, the title and preview images (`support/titles`, `support/previews` or their `titles.zip`/`previews.zip`), the driver icons (Misc > Selector Icons, from `support/icons` or `icons.zip`) and the Neo Geo MVS cartridge slots (play "Neo Geo MVS system"). The ROM and support paths are set in Misc > ROM Paths and Misc > Support Paths. The favorites are kept in `favorites.dat` of the config folder, in the format of the Windows build.
+
+The original titles of the games (Japanese, Chinese, Korean) use the fonts of the system: on Linux install the Noto CJK fonts, or tick "Latin text only" in the selector.
+
 ### SDL2 + CRT mode switching
 
 Linux now supports modeswitching for CRT monitors using https://github.com/antonioginer/switchres (which is the switchres code of GroovyMAME extracted by its author as a library for emulators that wish to implement resolution switching). In order to get this to work, you need to:
