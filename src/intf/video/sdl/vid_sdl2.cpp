@@ -39,8 +39,8 @@ void RenderMessage()
 		if (bAppFullscreen)
 		{
 			inprint_shadowed(sdlRenderer, fpsstring, 10, 50);
-		} 
-		else 
+		}
+		else
 		{
 			sprintf(Windowtitle, "FBNeo - FPS: %s - %s - %s", fpsstring, BurnDrvGetTextA(DRV_NAME), BurnDrvGetTextA(DRV_FULLNAME));
 			SDL_SetWindowTitle(sdlWindow, Windowtitle);
@@ -54,89 +54,7 @@ void RenderMessage()
 	}
 }
 
-#ifdef BUILD_SDL2_IMGUI
-// With the ImGui interface the window and the renderer belong to ui_core.cpp,
-// this module keeps the game texture, which the interface draws every frame.
-
-void VidSDL2SetFiltering()
-{
-	if (sdlTexture) {
-		SDL_ScaleMode nMode = SDL_ScaleModeNearest;
-		if (videofiltering[0] == '1') nMode = SDL_ScaleModeLinear;
-		if (videofiltering[0] == '2') nMode = SDL_ScaleModeBest;
-		SDL_SetTextureScaleMode(sdlTexture, nMode);
-	}
-}
-
-// Size of the game picture on screen, before scaling
-void VidSDL2GetScreenSize(int* pnWidth, int* pnHeight)
-{
-	*pnWidth = nRotateGame ? display_h : display_w;
-	*pnHeight = nRotateGame ? display_w : display_h;
-}
-
-// Draws the game in pArea (window coordinates), keeping the aspect ratio
-void VidSDL2DrawGame(const SDL_Rect* pArea)
-{
-	if (sdlTexture == NULL || pArea->w <= 0 || pArea->h <= 0) {
-		return;
-	}
-
-	int w, h;
-	VidSDL2GetScreenSize(&w, &h);
-
-	int nOutW = pArea->w, nOutH = pArea->h;
-	if (!bVidFullStretch) {
-		double dScale = SDL_min((double)pArea->w / w, (double)pArea->h / h);
-		if (bIntegerScale && dScale >= 1.0) {
-			dScale = floor(dScale);
-		}
-		nOutW = (int)(w * dScale + 0.5);
-		nOutH = (int)(h * dScale + 0.5);
-	}
-
-	// SDL_RenderCopyEx() rotates around the centre, so the rectangle is given unrotated
-	SDL_Rect dst;
-	dst.w = nRotateGame ? nOutH : nOutW;
-	dst.h = nRotateGame ? nOutW : nOutH;
-	dst.x = pArea->x + (pArea->w - dst.w) / 2;
-	dst.y = pArea->y + (pArea->h - dst.h) / 2;
-
-	if (nRotateGame) {
-		SDL_RenderCopyEx(sdlRenderer, sdlTexture, NULL, &dst, (bFlipped ? 90 : 270), NULL, SDL_FLIP_NONE);
-	} else if (bFlipped) {
-		SDL_RenderCopyEx(sdlRenderer, sdlTexture, NULL, &dst, 180, NULL, SDL_FLIP_NONE);
-	} else {
-		SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, &dst);
-	}
-}
-#endif
-
-static int Exit()
-{
-#ifdef INCLUDE_SWITCHRES
-	sr_deinit();
-#endif
-#ifndef BUILD_SDL2_IMGUI
-	kill_inline_font(); //TODO: This is not supposed to be here
-#endif
-	SDL_DestroyTexture(sdlTexture);
-	sdlTexture = NULL;
-#ifndef BUILD_SDL2_IMGUI
-	SDL_DestroyRenderer(sdlRenderer);
-	sdlRenderer = NULL;
-	SDL_DestroyWindow(sdlWindow);
-	sdlWindow = NULL;
-#endif
-
-	if (VidMem)
-	{
-		free(VidMem);
-		VidMem = NULL;
-	}
-	return 0;
-}
-
+// The window and the logical size of the legacy interface (the main loop of run.cpp)
 void AdjustImageSize()
 {
 	screenFlags = SDL_GetWindowFlags(sdlWindow);
@@ -187,6 +105,373 @@ void AdjustImageSize()
 	SDL_SetWindowPosition(sdlWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	dstrect.w = display_w;
 	dstrect.h = display_h;
+}
+
+#ifdef BUILD_SDL2_IMGUI
+// With the ImGui interface the window and the renderer belong to ui_core.cpp,
+// this module keeps the game texture, which the interface draws every frame.
+
+INT32 nVidSoftFX = -1;					// software effect (FILTER_* of vid_softfx.h), -1 = none
+bool bMonitorAutoCheck = true;			// square pixels, or the aspect ratios nVidScrnAspectX/Y (nVidVerScrnAspectX/Y)
+INT32 bVidExclusiveFullscreen = 0;		// fullscreen changes the resolution while a game runs
+INT32 nVidFullDisplay[2] = { -1, -1 };	// fullscreen display of the horizontal / vertical games, -1 = the window's
+INT32 nVidFullWidth[2] = { 0, 0 };		// exclusive fullscreen resolution, 0 = the desktop's
+INT32 nVidFullHeight[2] = { 0, 0 };
+
+static bool bSoftFX = false;
+static int nSoftFXZoom = 1;				// the texture is that much larger than the image
+static SDL_Texture* sdlScanlines = NULL;	// one line clear and one dark per line of the game
+static int nScanlinesLines = 0;
+static int nScanlinesIntensity = -1;
+
+void VidSDL2SetFiltering()
+{
+	if (sdlTexture) {
+		SDL_ScaleMode nMode = SDL_ScaleModeNearest;
+		if (videofiltering[0] == '1') nMode = SDL_ScaleModeLinear;
+		if (videofiltering[0] == '2') nMode = SDL_ScaleModeBest;
+		SDL_SetTextureScaleMode(sdlTexture, nMode);
+	}
+}
+
+bool VidSDL2GameVertical()
+{
+	return nRotateGame != 0;
+}
+
+// Vertical games are turned unless Video > Rotate Vertical Games is off
+static bool RotateGame()
+{
+	return nRotateGame && !(nVidRotationAdjust & 1);
+}
+
+// Clockwise angle of the game picture on screen
+static int GameAngle()
+{
+	int nAngle = RotateGame() ? 270 : 0;
+	if (bFlipped) {
+		nAngle += 180;
+	}
+	if (nRotateGame && (nVidRotationAdjust & 2)) {
+		nAngle += 180;					// the vertical monitor is turned the other way
+	}
+	return nAngle % 360;
+}
+
+// Width / height of a pixel of the display: 1 unless an aspect ratio is set for the monitor
+static double DisplayPixelAspect()
+{
+	if (bMonitorAutoCheck) {
+		return 1.0;
+	}
+
+	int nAspectX = nVidScrnAspectX, nAspectY = nVidScrnAspectY;
+	if (nRotateGame && bAppFullscreen && RotateGame()) {
+		nAspectX = nVidVerScrnAspectX;	// the monitor of the vertical games, like the Win32 build
+		nAspectY = nVidVerScrnAspectY;
+	}
+
+	SDL_DisplayMode mode;
+	int nDisplay = SDL_GetWindowDisplayIndex(sdlWindow);
+	if (nAspectX <= 0 || nAspectY <= 0 || nDisplay < 0 || SDL_GetCurrentDisplayMode(nDisplay, &mode) || mode.w <= 0 || mode.h <= 0) {
+		return 1.0;
+	}
+	return ((double)nAspectX * mode.h) / ((double)nAspectY * mode.w);
+}
+
+// Size of the game picture on screen at scale 1
+static void ScreenSize(double* pdWidth, double* pdHeight)
+{
+	double w = nVidImageWidth, h = nVidImageHeight;		// the pixels as they are (Normal)
+	if (bVidCorrectAspect || bVidFullStretch) {
+		w = display_w;
+		h = display_h;
+	}
+	if (GameAngle() % 180) {
+		double t = w; w = h; h = t;
+	}
+	if (bVidCorrectAspect && !bVidFullStretch) {
+		w /= DisplayPixelAspect();
+	}
+	*pdWidth = w;
+	*pdHeight = h;
+}
+
+void VidSDL2GetScreenSize(int* pnWidth, int* pnHeight)
+{
+	double w, h;
+	ScreenSize(&w, &h);
+	*pnWidth = (int)(w + 0.5);
+	*pnHeight = (int)(h + 0.5);
+}
+
+static void MakeScanlines(int nLines)
+{
+	int nIntensity = nVidScanIntensity & 0xFF;
+	if (sdlScanlines && nLines == nScanlinesLines && nIntensity == nScanlinesIntensity) {
+		return;
+	}
+	if (sdlScanlines) {
+		SDL_DestroyTexture(sdlScanlines);
+		sdlScanlines = NULL;
+	}
+
+	// 1 pixel wide, stretched over the game
+	Uint32* pPixels = (Uint32*)malloc(nLines * 2 * sizeof(Uint32));
+	if (pPixels == NULL) {
+		return;
+	}
+	for (int i = 0; i < nLines; i++) {
+		pPixels[i * 2 + 0] = 0;
+		pPixels[i * 2 + 1] = (Uint32)(255 - nIntensity) << 24;		// black, the darker the lower the intensity
+	}
+
+	sdlScanlines = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, 1, nLines * 2);
+	if (sdlScanlines) {
+		SDL_UpdateTexture(sdlScanlines, NULL, pPixels, sizeof(Uint32));
+		SDL_SetTextureBlendMode(sdlScanlines, SDL_BLENDMODE_BLEND);
+		SDL_SetTextureScaleMode(sdlScanlines, SDL_ScaleModeNearest);
+		nScanlinesLines = nLines;
+		nScanlinesIntensity = nIntensity;
+	}
+	free(pPixels);
+}
+
+// Draws the game in pArea (window coordinates)
+void VidSDL2DrawGame(const SDL_Rect* pArea)
+{
+	if (sdlTexture == NULL || pArea->w <= 0 || pArea->h <= 0) {
+		return;
+	}
+
+	double w, h;
+	ScreenSize(&w, &h);
+
+	int nOutW = pArea->w, nOutH = pArea->h;
+	if (!bVidFullStretch) {
+		double dScale = SDL_min(pArea->w / w, pArea->h / h);
+		if ((bIntegerScale || !bVidCorrectAspect) && dScale >= 1.0) {
+			dScale = floor(dScale);		// Normal and Integer Scaling: whole multiples
+		}
+		nOutW = (int)(w * dScale + 0.5);
+		nOutH = (int)(h * dScale + 0.5);
+	}
+
+	// SDL_RenderCopyEx() turns the picture around its centre, so the rectangle is given unturned
+	int nAngle = GameAngle();
+	SDL_Rect dst;
+	dst.w = (nAngle % 180) ? nOutH : nOutW;
+	dst.h = (nAngle % 180) ? nOutW : nOutH;
+	dst.x = pArea->x + (pArea->w - dst.w) / 2;
+	dst.y = pArea->y + (pArea->h - dst.h) / 2;
+
+	if (nAngle) {
+		SDL_RenderCopyEx(sdlRenderer, sdlTexture, NULL, &dst, nAngle, NULL, SDL_FLIP_NONE);
+	} else {
+		SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, &dst);
+	}
+
+	if (bVidScanlines) {
+		// along the lines of the game, or across the screen when they don't turn with it
+		bool bTurn = bVidScanRotate || (nAngle % 180) == 0;
+		MakeScanlines(bTurn ? nVidImageHeight : nVidImageWidth);
+		if (sdlScanlines) {
+			if (bTurn) {
+				SDL_RenderCopyEx(sdlRenderer, sdlScanlines, NULL, &dst, nAngle, NULL, SDL_FLIP_NONE);
+			} else {
+				SDL_Rect out = { pArea->x + (pArea->w - nOutW) / 2, pArea->y + (pArea->h - nOutH) / 2, nOutW, nOutH };
+				SDL_RenderCopy(sdlRenderer, sdlScanlines, NULL, &out);
+			}
+		}
+	}
+}
+
+// The depths of the image and of the texture for the software effect, false if it can't be used
+static bool SoftFXDepths(int nEffect, int* pnImageDepth, int* pnTextureDepth)
+{
+	if (VidSoftFXCheckDepth(nEffect, 32) == 32) {
+		*pnImageDepth = *pnTextureDepth = 32;
+		return true;
+	}
+	int nOut = VidSoftFXCheckDepth(nEffect, 16);
+	if (nOut) {
+		*pnImageDepth = 16;
+		*pnTextureDepth = nOut;			// the hq2x family makes 32 bits out of 16
+		return true;
+	}
+	return false;
+}
+
+static int Exit()
+{
+#ifdef INCLUDE_SWITCHRES
+	sr_deinit();
+#endif
+	if (bSoftFX) {
+		VidSoftFXExit();
+		bSoftFX = false;
+	}
+	SDL_DestroyTexture(sdlTexture);
+	sdlTexture = NULL;
+	if (sdlScanlines) {
+		SDL_DestroyTexture(sdlScanlines);
+		sdlScanlines = NULL;
+	}
+
+	if (VidMem)
+	{
+		free(VidMem);
+		VidMem = NULL;
+	}
+	pVidImage = NULL;
+	return 0;
+}
+
+static int Init()
+{
+	int GameAspectX = 4, GameAspectY = 3;
+
+	nRotateGame = 0;
+	bFlipped = false;
+
+	if (bDrvOkay)
+	{
+		// Get the game screen size, vertical games are kept as the hardware makes them
+		if (BurnDrvGetFlags() & BDF_ORIENTATION_VERTICAL)
+		{
+			BurnDrvGetVisibleSize(&nVidImageHeight, &nVidImageWidth);
+			BurnDrvGetAspect(&GameAspectY, &GameAspectX);
+			nRotateGame = 1;
+		}
+		else
+		{
+			BurnDrvGetVisibleSize(&nVidImageWidth, &nVidImageHeight);
+			BurnDrvGetAspect(&GameAspectX, &GameAspectY);
+		}
+
+#ifdef INCLUDE_SWITCHRES
+		// Don't force 4:3 aspect-ratio, until there is a command-line switch
+		display_w = nVidImageWidth;
+		display_h = nVidImageHeight;
+		sr_init();
+		if (nRotateGame) sr_set_rotation(1);
+#else
+		// the picture with its aspect ratio, before it's turned
+		if (nRotateGame) {
+			display_w = nVidImageHeight * GameAspectX / GameAspectY;
+			display_h = nVidImageHeight;
+		} else {
+			display_w = nVidImageWidth;
+			display_h = nVidImageWidth * GameAspectY / GameAspectX;
+		}
+#endif
+
+		bFlipped = (BurnDrvGetFlags() & BDF_ORIENTATION_FLIPPED) != 0;
+	}
+
+#ifdef INCLUDE_SWITCHRES
+	sr_mode srm;
+	unsigned char interlace = 0; // FBN doesn't handle interlace yet, force it to disabled
+	double rr = nBurnFPS / 100.0;
+	sr_init_disp();
+	sr_add_mode(display_w, display_h, rr, interlace, &srm);
+	sr_switch_to_mode(display_w, display_h, rr, interlace, &srm);
+#endif
+
+	nVidImageDepth = (bDrvOkay && (BurnDrvGetFlags() & BDF_16BIT_ONLY)) ? 16 : 32;
+	int nTextureDepth = nVidImageDepth;
+
+	// a software effect works with some depths only (VidInit() translates the 16 bit only games)
+	bSoftFX = nVidSoftFX >= 0 && bDrvOkay && SoftFXDepths(nVidSoftFX, &nVidImageDepth, &nTextureDepth);
+
+	nVidImageBPP = (nVidImageDepth + 7) >> 3;
+	nBurnBpp = nVidImageBPP;
+
+	SetBurnHighCol(nVidImageDepth);
+
+	nVidImagePitch = nVidImageWidth * nVidImageBPP;
+	nBurnPitch = nVidImagePitch;
+
+	int nMemLen = nVidImageWidth * nVidImageHeight * nVidImageBPP;
+	VidMem = (unsigned char*)malloc(nMemLen);
+	if (VidMem == NULL)
+	{
+		pVidImage = NULL;
+		bSoftFX = false;
+		return 1;
+	}
+	memset(VidMem, 0, nMemLen);
+	pVidImage = VidMem;
+
+	nSoftFXZoom = 1;
+	if (bSoftFX)
+	{
+		if (VidSoftFXInit(nVidSoftFX, 0) == 0)	// not turned, SDL_RenderCopyEx() does that
+		{
+			nSoftFXZoom = VidSoftFXGetZoom(nVidSoftFX);
+		}
+		else
+		{
+			bSoftFX = false;
+			nTextureDepth = nVidImageDepth;
+		}
+	}
+
+	sdlTexture = SDL_CreateTexture(sdlRenderer,
+		(nTextureDepth == 32) ? SDL_PIXELFORMAT_RGB888 : SDL_PIXELFORMAT_RGB565,
+		SDL_TEXTUREACCESS_STREAMING,
+		nVidImageWidth * nSoftFXZoom, nVidImageHeight * nSoftFXZoom);
+	if (!sdlTexture)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create sdlTexture from surface: %s", SDL_GetError());
+		Exit();
+		return 3;
+	}
+	VidSDL2SetFiltering();
+
+	return 0;
+}
+
+// Paint the image onto the texture, UiPresent() draws it with the interface
+static int Paint(int bValidate)
+{
+	if (bSoftFX)
+	{
+		void* pPixels;
+		int nPitch;
+		if (SDL_LockTexture(sdlTexture, NULL, &pPixels, &nPitch) == 0)
+		{
+			VidFilterApplyEffect((unsigned char*)pPixels, nPitch);
+			SDL_UnlockTexture(sdlTexture);
+		}
+		return 0;
+	}
+
+	SDL_UpdateTexture(sdlTexture, NULL, pVidImage, nVidImagePitch);
+	return 0;
+}
+
+#else
+
+static int Exit()
+{
+#ifdef INCLUDE_SWITCHRES
+	sr_deinit();
+#endif
+	kill_inline_font(); //TODO: This is not supposed to be here
+	SDL_DestroyTexture(sdlTexture);
+	sdlTexture = NULL;
+	SDL_DestroyRenderer(sdlRenderer);
+	sdlRenderer = NULL;
+	SDL_DestroyWindow(sdlWindow);
+	sdlWindow = NULL;
+
+	if (VidMem)
+	{
+		free(VidMem);
+		VidMem = NULL;
+	}
+	return 0;
 }
 
 static int Init()
@@ -267,7 +552,6 @@ static int Init()
 	sr_switch_to_mode(display_w, display_h, rr, interlace, &srm);
 #endif
 
-#ifndef BUILD_SDL2_IMGUI
 	if (nRotateGame)
 	{
 		sdlWindow = SDL_CreateWindow(
@@ -311,7 +595,7 @@ static int Init()
 	{
 		sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, SDL_RENDERER_SOFTWARE);
 		if (sdlRenderer == NULL)
-		{	
+		{
 			// In the case that the window could not be made...
 			printf("Could not create renderer: %s\n", SDL_GetError());
 			return 1;
@@ -319,7 +603,6 @@ static int Init()
 	}
 
 	SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_NONE);
-#endif
 
 	nVidImageDepth = 32;
 
@@ -333,7 +616,6 @@ static int Init()
 #ifdef FBNEO_DEBUG
 	printf("bbp: %d\n", nVidImageDepth);
 #endif
-#ifndef BUILD_SDL2_IMGUI
 	if (bIntegerScale)
 	{
 		SDL_RenderSetIntegerScale(sdlRenderer, SDL_TRUE);
@@ -346,11 +628,10 @@ static int Init()
 #ifdef FBNEO_DEBUG
 	printf("setting logical size w: %d h: %d\n", display_w, display_h);
 #endif
-	
+
 	inrenderer(sdlRenderer); //TODO: this is not supposed to be here
 	prepare_inline_font();   // TODO: BAD
 	incolor(0xFFF000, 0);
-#endif
 
 	if (nVidImageDepth == 32)
 	{
@@ -371,9 +652,6 @@ static int Init()
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create sdlTexture from surface: %s", SDL_GetError());
 		return 3;
 	}
-#ifdef BUILD_SDL2_IMGUI
-	VidSDL2SetFiltering();
-#endif
 
 	nVidImageBPP = (nVidImageDepth + 7) >> 3;
 	nBurnBpp = nVidImageBPP;
@@ -409,38 +687,9 @@ static int Init()
 	return 0;
 }
 
-static int vidScale(RECT*, int, int)
-{
-	return 0;
-}
-
-// Run one frame and render the screen
-static int Frame(bool bRedraw)                                          // bRedraw = 0
-{
-	if ((didReinitialise) && (pVidImage == NULL)) {
-		didReinitialise = false;
-		Exit();
-		Init();
-	}
-	if (pVidImage == NULL)
-	{
-		return 1;
-	}
-
-	VidFrameCallback(bRedraw);
-
-	return 0;
-}
-
 // Paint the BlitFX surface onto the primary surface
 static int Paint(int bValidate)
 {
-#ifdef BUILD_SDL2_IMGUI
-	// UiPresent() draws it with the interface
-	SDL_UpdateTexture(sdlTexture, NULL, pVidImage, nVidImagePitch);
-	return 0;
-#endif
-
 	SDL_RenderClear(sdlRenderer);
 	SDL_UpdateTexture(sdlTexture, NULL, pVidImage, nVidImagePitch);
 	if (nRotateGame)
@@ -462,6 +711,31 @@ static int Paint(int bValidate)
 	RenderMessage();
 
 	SDL_RenderPresent(sdlRenderer);
+
+	return 0;
+}
+
+#endif
+
+static int vidScale(RECT*, int, int)
+{
+	return 0;
+}
+
+// Run one frame and render the screen
+static int Frame(bool bRedraw)                                          // bRedraw = 0
+{
+	if ((didReinitialise) && (pVidImage == NULL)) {
+		didReinitialise = false;
+		Exit();
+		Init();
+	}
+	if (pVidImage == NULL)
+	{
+		return 1;
+	}
+
+	VidFrameCallback(bRedraw);
 
 	return 0;
 }

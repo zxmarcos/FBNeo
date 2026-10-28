@@ -3,15 +3,11 @@
 #include "ui.h"
 #include "imgui.h"
 
-extern int vsync;
-extern char videofiltering[3];
 extern bool do_reset_game;					// inp_sdl2.cpp
 extern INT32 AutoFireRateList[6];			// sdl2_gui_ingame.cpp
 extern char AutoFireRateLabels[6][10];
 extern INT32 EnableHiscores;
 extern INT32 nSocd[6];						// burn/devices/joyprocess.cpp
-extern SDL_Renderer* sdlRenderer;
-void VidSDL2SetFiltering();
 
 static float fReserved = 0.0f;				// taken from the game area
 static bool bMenusOpen = false;
@@ -26,85 +22,6 @@ float UiMenuBarHeight()
 static void GameMenu()
 {
 	UiGameMenu();					// ui_game.cpp
-}
-
-static void VideoMenu()
-{
-	if (ImGui::MenuItem("Fullscreen", UiHotkeyName(UI_HK_FULLSCREEN), bAppFullscreen)) {
-		UiToggleFullscreen();
-	}
-	if (ImGui::BeginMenu("Window Size", !bAppFullscreen)) {
-		for (int i = 1; i <= 5; i++) {
-			char szLabel[8];
-			snprintf(szLabel, sizeof(szLabel), "%dx", i);
-			if (ImGui::MenuItem(szLabel, NULL, nWindowScale == i)) {
-				UiSetWindowScale(i);
-			}
-		}
-		ImGui::EndMenu();
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("Stretch to Fill", NULL, bVidFullStretch != 0)) {
-		bVidFullStretch = !bVidFullStretch;
-	}
-	if (ImGui::MenuItem("Integer Scaling", NULL, bIntegerScale, !bVidFullStretch)) {
-		bIntegerScale = !bIntegerScale;
-	}
-	if (ImGui::BeginMenu("Filtering")) {
-		static const char* pszFilters[] = { "Nearest", "Linear", "Best" };
-		for (int i = 0; i < 3; i++) {
-			if (ImGui::MenuItem(pszFilters[i], NULL, videofiltering[0] == '0' + i)) {
-				snprintf(videofiltering, 3, "%d", i);
-				VidSDL2SetFiltering();
-			}
-		}
-		ImGui::EndMenu();
-	}
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-	if (ImGui::MenuItem("VSync", NULL, vsync != 0)) {
-		vsync = !vsync;
-		SDL_RenderSetVSync(sdlRenderer, vsync);
-	}
-#endif
-	ImGui::Separator();
-	if (ImGui::MenuItem("Auto Frameskip", NULL, !bAlwaysDrawFrames)) {
-		bAlwaysDrawFrames = !bAlwaysDrawFrames;
-	}
-	if (ImGui::MenuItem("Run-Ahead (one frame less of lag)", NULL, bRunAhead != 0)) {
-		bRunAhead = !bRunAhead;
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("Show FPS", UiHotkeyName(UI_HK_FPS), bAppShowFPS)) {
-		bAppShowFPS = !bAppShowFPS;
-	}
-}
-
-static void AudioMenu()
-{
-	int nVolume = nAudVolume / 100;
-	ImGui::SetNextItemWidth(160.0f * fUiScale);
-	if (ImGui::SliderInt("Volume", &nVolume, 0, 100, "%d%%")) {
-		nAudVolume = nVolume * 100;
-		AudSoundSetVolume();
-	}
-	ImGui::Separator();
-	if (ImGui::BeginMenu("Sample Rate")) {
-		static const int nRates[] = { 11025, 22050, 44100, 48000 };
-		for (int i = 0; i < 4; i++) {
-			char szLabel[16];
-			snprintf(szLabel, sizeof(szLabel), "%d Hz", nRates[i]);
-			if (ImGui::MenuItem(szLabel, NULL, nAudSampleRate[0] == nRates[i])) {
-				nAudSampleRate[0] = nRates[i];
-			}
-		}
-		if (UiGameRunning()) {
-			ImGui::TextDisabled("Used from the next game on");
-		}
-		ImGui::EndMenu();
-	}
-	if (ImGui::MenuItem("Low-Pass Filter", NULL, nAudDSPModule[0] != 0)) {
-		nAudDSPModule[0] = nAudDSPModule[0] ? 0 : 1;
-	}
 }
 
 static void InputMenu()
@@ -304,12 +221,12 @@ void UiMenuBarDraw()
 			bMenusOpen = true;
 		}
 		if (ImGui::BeginMenu("Video")) {
-			VideoMenu();
+			UiVideoMenu();				// ui_video.cpp
 			ImGui::EndMenu();
 			bMenusOpen = true;
 		}
 		if (ImGui::BeginMenu("Audio")) {
-			AudioMenu();
+			UiAudioMenu();
 			ImGui::EndMenu();
 			bMenusOpen = true;
 		}

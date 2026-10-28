@@ -4,6 +4,9 @@
 #include "ui.h"
 #include "gamelist_model.h"
 extern INT32 nSocd[6];			// burn/devices/joyprocess.cpp
+extern int vsync;				// main.cpp
+extern char videofiltering[3];
+void CmdLineOptionsForSave(bool bSave);
 #endif
 
 int nIniVersion = 0;
@@ -178,6 +181,44 @@ int ConfigAppLoad()
 			szValue = LabelCheck(szLine, szLabel);
 			if (szValue) snprintf(szPlayerDefaultIni[i], MAX_PATH, "%s", szValue);
 		}
+		// video
+		VAR(vsync);
+		VAR(bAppFullscreen);
+		VAR(nWindowScale);
+		VAR(bVidCorrectAspect);
+		VAR(bIntegerScale);
+		{
+			char *szValue = LabelCheck(szLine, "videofiltering");
+			if (szValue) {
+				int n = strtol(szValue, NULL, 0);
+				if (n >= 0 && n <= 2) snprintf(videofiltering, 3, "%d", n);
+			}
+		}
+		VAR(nVidSoftFX);
+		VAR(bVidScanRotate);
+		VAR(nVidScanIntensity);
+		VAR(bMonitorAutoCheck);
+		VAR(nVidScrnAspectX);
+		VAR(nVidScrnAspectY);
+		VAR(nVidVerScrnAspectX);
+		VAR(nVidVerScrnAspectY);
+		VAR(nVidRotationAdjust);
+		VAR(bVidAutoSwitchFull);
+		VAR(bVidExclusiveFullscreen);
+		VAR(nVidFullDisplay[0]);
+		VAR(nVidFullDisplay[1]);
+		VAR(nVidFullWidth[0]);
+		VAR(nVidFullHeight[0]);
+		VAR(nVidFullWidth[1]);
+		VAR(nVidFullHeight[1]);
+		// audio
+		{
+			char *szValue = LabelCheck(szLine, "szAudSDLDriver ");
+			if (szValue) snprintf(szAudSDLDriver, sizeof(szAudSDLDriver), "%s", szValue);
+			szValue = LabelCheck(szLine, "szAudSDLDevice ");
+			if (szValue) snprintf(szAudSDLDevice, sizeof(szAudSDLDevice), "%s", szValue);
+		}
+		VAR(nAudSegCount);
 #endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
@@ -255,7 +296,9 @@ int ConfigAppSave()
 	{
 		return 1;
 	}
-
+#ifdef BUILD_SDL2_IMGUI
+	CmdLineOptionsForSave(true);	// the ini keeps its values for the options of the command line
+#endif
 
 #define VAR(x)    fprintf(f, #x " %d\n", x)
 #define FLT(x)    fprintf(f, #x " %f\n", x)
@@ -341,6 +384,44 @@ int ConfigAppSave()
 		fprintf(f, "nPlayerDefaultControls[%d] %d\n", i, nPlayerDefaultControls[i]);
 		fprintf(f, "szPlayerDefaultIni[%d] %s\n", i, szPlayerDefaultIni[i]);
 	}
+	fprintf(f, "\n// If non-zero, wait for the vertical sync of the display\n");
+	VAR(vsync);
+	fprintf(f, "\n// Fullscreen, and the size of the window for a game (1 - 4 times, 0 = maximized)\n");
+	VAR(bAppFullscreen);
+	VAR(nWindowScale);
+	fprintf(f, "\n// Stretch: bVidFullStretch fills the window, bVidCorrectAspect keeps the aspect ratio (Normal without both), bIntegerScale whole multiples\n");
+	VAR(bVidCorrectAspect);
+	VAR(bIntegerScale);
+	fprintf(f, "\n// Filtering of the scaled picture: 0 nearest, 1 linear, 2 best\n");
+	fprintf(f, "videofiltering %c\n", videofiltering[0]);
+	fprintf(f, "\n// Software effect (the index of vid_softfx.h), -1 = none\n");
+	VAR(nVidSoftFX);
+	fprintf(f, "\n// Scanlines turn with the vertical games, and their brightness (0x000000 black - 0xFFFFFF none)\n");
+	VAR(bVidScanRotate);
+	fprintf(f, "nVidScanIntensity 0x%06X\n", nVidScanIntensity);
+	fprintf(f, "\n// If zero, the aspect ratio of the monitor (horizontal, and vertical in fullscreen) instead of square pixels\n");
+	VAR(bMonitorAutoCheck);
+	VAR(nVidScrnAspectX);
+	VAR(nVidScrnAspectY);
+	VAR(nVidVerScrnAspectX);
+	VAR(nVidVerScrnAspectY);
+	fprintf(f, "\n// Vertical games: 1 = not rotated, 2 = rotated the other way (mirrored vertical alignment)\n");
+	VAR(nVidRotationAdjust);
+	fprintf(f, "\n// If non-zero, go to fullscreen when a game is loaded\n");
+	VAR(bVidAutoSwitchFull);
+	fprintf(f, "\n// Fullscreen of the games: exclusive mode (another resolution, 0 = the desktop's), and the display (-1 = the window's), [0] horizontal and [1] vertical games\n");
+	VAR(bVidExclusiveFullscreen);
+	VAR(nVidFullDisplay[0]);
+	VAR(nVidFullDisplay[1]);
+	VAR(nVidFullWidth[0]);
+	VAR(nVidFullHeight[0]);
+	VAR(nVidFullWidth[1]);
+	VAR(nVidFullHeight[1]);
+	fprintf(f, "\n// SDL audio driver and output device, empty for the default ones\n");
+	STR(szAudSDLDriver);
+	STR(szAudSDLDevice);
+	fprintf(f, "\n// Frames of sound in the buffer\n");
+	VAR(nAudSegCount);
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);
@@ -437,5 +518,8 @@ int ConfigAppSave()
 #undef VAR
 
 	fclose(f);
+#ifdef BUILD_SDL2_IMGUI
+	CmdLineOptionsForSave(false);
+#endif
 	return 0;
 }

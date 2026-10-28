@@ -482,6 +482,30 @@ int RunExit()
 	return 0;
 }
 
+#ifdef BUILD_SDL2_IMGUI
+// Opens the sound output again (another driver, device or buffer size) at the
+// same sample rate, the game goes on without sound if that fails
+int RunAudioReInit()
+{
+	bool bPlaying = bAudPlaying;
+
+	pBurnSoundOut = NULL;
+	AudSoundStop();
+	AudSoundExit();
+	if (AudSoundInit()) {
+		RunReset();
+		return 1;
+	}
+	AudSetCallback(RunGetNextSound);
+	AudSoundSetVolume();
+	if (bPlaying) {
+		AudSoundPlay();
+	}
+	RunReset();
+	return 0;
+}
+#endif
+
 #ifdef BUILD_SDL2
 void pause_game()
 {

@@ -13,8 +13,6 @@ extern int RunInit();
 extern int RunExit();
 extern int RunIdle();
 extern INT32 display_set_controls();
-void VidSDL2GetScreenSize(int* pnWidth, int* pnHeight);
-void VidSDL2DrawGame(const SDL_Rect* pArea);
 
 bool bUiMenuPinned = true;
 bool bUiPauseOnMenu = true;
@@ -58,6 +56,11 @@ void UiSetWindowScale(int nScale)
 	bFitWindowRequest = true;
 }
 
+void UiRefitWindow()
+{
+	bFitWindowRequest = true;
+}
+
 static void SetTitle()
 {
 	char szTitle[512];
@@ -69,7 +72,7 @@ static void SetTitle()
 	SDL_SetWindowTitle(sdlWindow, szTitle);
 }
 
-// Window size for the game (scaled by nWindowScale) plus the menu bar
+// Window size for the game (scaled by nWindowScale, 0 = maximized) plus the menu bar
 static void FitWindow()
 {
 	if (!bGameRunning || bAppFullscreen) {
@@ -81,13 +84,32 @@ static void FitWindow()
 	if (w <= 0 || h <= 0) {
 		return;
 	}
+	if (nWindowScale <= 0) {
+		SDL_MaximizeWindow(sdlWindow);
+		return;
+	}
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	int nMenu = bUiMenuPinned ? (int)(ImGui::GetIO().Fonts->Fonts[0]->FontSize + style.FramePadding.y * 2.0f) : 0;
 
+	// a smaller scale if the window wouldn't fit in the display
+	int nDisplay = SDL_GetWindowDisplayIndex(sdlWindow);
+	if (nDisplay < 0) {
+		nDisplay = 0;
+	}
+	int nScale = nWindowScale;
+	SDL_Rect usable;
+	if (SDL_GetDisplayUsableBounds(nDisplay, &usable) == 0) {
+		int nTop = 0, nLeft = 0, nBottom = 0, nRight = 0;
+		SDL_GetWindowBordersSize(sdlWindow, &nTop, &nLeft, &nBottom, &nRight);
+		while (nScale > 1 && (w * nScale + nLeft + nRight > usable.w || h * nScale + nMenu + nTop + nBottom > usable.h)) {
+			nScale--;
+		}
+	}
+
 	SDL_RestoreWindow(sdlWindow);		// a maximized window ignores the new size
-	SDL_SetWindowSize(sdlWindow, w * nWindowScale, h * nWindowScale + nMenu);
-	SDL_SetWindowPosition(sdlWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	SDL_SetWindowSize(sdlWindow, w * nScale, h * nScale + nMenu);
+	SDL_SetWindowPosition(sdlWindow, SDL_WINDOWPOS_CENTERED_DISPLAY(nDisplay), SDL_WINDOWPOS_CENTERED_DISPLAY(nDisplay));
 }
 
 static void SetPaused(bool bPause)
@@ -127,6 +149,8 @@ static void StopGame()
 	bAppDoRewind = 0;
 	bUiCapture = false;
 
+	UiVideoGameStopped();				// out of the fullscreen of Auto Switch to Fullscreen, or of the game's mode
+
 	if (bSaveconfig) {
 		ConfigAppSave();
 	}
@@ -135,8 +159,11 @@ static void StopGame()
 	SetTitle();
 
 	if (nSelectorW && !bAppFullscreen) {
+		int nDisplay = SDL_GetWindowDisplayIndex(sdlWindow);
+		if (nDisplay < 0) nDisplay = 0;
+		SDL_RestoreWindow(sdlWindow);
 		SDL_SetWindowSize(sdlWindow, nSelectorW, nSelectorH);
-		SDL_SetWindowPosition(sdlWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+		SDL_SetWindowPosition(sdlWindow, SDL_WINDOWPOS_CENTERED_DISPLAY(nDisplay), SDL_WINDOWPOS_CENTERED_DISPLAY(nDisplay));
 	}
 	nSelectorW = nSelectorH = 0;
 }
@@ -186,6 +213,7 @@ static void StartGame(int nDrv)
 		SDL_GetWindowSize(sdlWindow, &nSelectorW, &nSelectorH);
 	}
 	SetTitle();
+	UiVideoGameStarted();				// the fullscreen of the game (display, resolution)
 	FitWindow();
 	GameInpCheckMouse();
 	UiGameStarted();
@@ -195,7 +223,7 @@ static void DoRequests()
 {
 	if (bFullscreenRequest) {
 		bFullscreenRequest = false;
-		SetFullscreen(!GetFullscreen());
+		UiVideoSetFullscreen(!bAppFullscreen);
 		if (!bAppFullscreen) {
 			bFitWindowRequest = true;
 		}
@@ -219,12 +247,31 @@ static void DoRequests()
 static bool bEndHeld = false;				// the game ends when the key is released
 static int nMuteVolume = -1;
 
+bool UiMuted()
+{
+	return nMuteVolume >= 0;
+}
+
+void UiToggleMute()
+{
+	if (nMuteVolume >= 0) {
+		nAudVolume = nMuteVolume;
+		nMuteVolume = -1;
+		UpdateMessage((char*)"Sound on");
+	} else {
+		nMuteVolume = nAudVolume;
+		nAudVolume = 0;
+		UpdateMessage((char*)"Sound muted");
+	}
+	AudSoundSetVolume();
+}
+
 static void ChangeVolume(int nDelta)
 {
 	nMuteVolume = -1;
 	nAudVolume += nDelta;
 	if (nAudVolume < 0) nAudVolume = 0;
-	if (nAudVolume > 10000) nAudVolume = 10000;
+	if (nAudVolume > 20000) nAudVolume = 20000;		// 200%, it amplifies above 100%
 	AudSoundSetVolume();
 
 	char szText[32];
@@ -288,18 +335,7 @@ static void GameHotkey(int nAction, const SDL_KeyboardEvent& key)
 				bScreenshotHeld = true;
 			}
 			break;
-		case UI_HK_MUTE:
-			if (nMuteVolume >= 0) {
-				nAudVolume = nMuteVolume;
-				nMuteVolume = -1;
-				UpdateMessage((char*)"Sound on");
-			} else {
-				nMuteVolume = nAudVolume;
-				nAudVolume = 0;
-				UpdateMessage((char*)"Sound muted");
-			}
-			AudSoundSetVolume();
-			break;
+		case UI_HK_MUTE:			UiToggleMute(); break;
 		case UI_HK_VOLUME_UP:		ChangeVolume(500); break;
 		case UI_HK_VOLUME_DOWN:		ChangeVolume(-500); break;
 	}
@@ -509,6 +545,9 @@ int UiMain(int nDrvSelect, bool bMenu)
 	bMenuMode = bMenu || nDrvSelect < 0;
 	bQuitRequest = false;
 	SetTitle();
+	if (bAppFullscreen) {
+		UiVideoApplyFullscreen();		// on the display picked for the fullscreen
+	}
 	UiGameSelInit();
 
 	SDL_GameControllerEventState(SDL_ENABLE);

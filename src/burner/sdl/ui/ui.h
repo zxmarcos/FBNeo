@@ -33,9 +33,37 @@ void UiSetWindowScale(int nScale);
 void UiShowOverlay(bool bShow);			// the game menu (Tab)
 bool UiOverlayShown();
 void UiTogglePause();
+void UiToggleMute();
+bool UiMuted();
+void UiRefitWindow();						// the size of the game picture changed
 bool UiGameRunning();
 bool UiGamePaused();						// paused by the user (Game > Pause)
 bool UiMenuMode();							// the selector comes back when the game ends
+
+// ui_video.cpp
+void UiVideoMenu();
+void UiAudioMenu();
+void UiVideoReInit();						// the image and the texture again (software effect)
+void UiVideoApplyFullscreen();				// bAppFullscreen, with the display and the mode of the game
+void UiVideoSetFullscreen(bool bFullscreen);
+void UiVideoGameStarted();					// Auto Switch to Fullscreen
+void UiVideoGameStopped();
+
+// vid_sdl2.cpp
+extern INT32 nVidSoftFX;					// FILTER_* of vid_softfx.h, -1 = none
+extern bool bMonitorAutoCheck;				// square pixels, or nVidScrnAspectX/Y
+extern INT32 bVidExclusiveFullscreen;
+extern INT32 nVidFullDisplay[2];			// [0] horizontal games, [1] vertical games
+extern INT32 nVidFullWidth[2];
+extern INT32 nVidFullHeight[2];
+void VidSDL2SetFiltering();
+void VidSDL2GetScreenSize(int* pnWidth, int* pnHeight);	// the game picture at scale 1
+void VidSDL2DrawGame(const SDL_Rect* pArea);
+bool VidSDL2GameVertical();
+
+// aud_sdl.cpp
+extern char szAudSDLDriver[32];
+extern char szAudSDLDevice[256];
 
 // ui_menubar.cpp
 void UiMenuBarDraw();

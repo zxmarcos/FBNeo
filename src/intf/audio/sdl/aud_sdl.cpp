@@ -9,32 +9,51 @@ static unsigned int nSoundFps;
 
 extern int delay_ticks(int ticks);
 
-int nSDLVolume = SDL_MIX_MAXVOLUME;
+static int nSDLGain = 256;              // nAudVolume in 1/256 steps, above 256 it amplifies
 int (*GetNextSound)(int);               // Callback used to request more sound
 
 static SDL_AudioSpec audiospec;
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+char szAudSDLDriver[32] = "";			// the SDL audio driver, "" = the one SDL picks
+char szAudSDLDevice[256] = "";			// the output device, "" = the default one
+static SDL_AudioDeviceID nAudDevice = 0;
+static bool bDriverPicked = false;		// SDL_AudioInit() was called with szAudSDLDriver
+#endif
 
 static short* SDLAudBuffer;
 static int nSDLPlayPos;
 static int nSDLFillSeg;
 static int nAudLoopLen;
 
+// Copies samples with the volume, which can go up to 200%
+static void CopyWithVolume(Uint8* pDest, const Uint8* pSrc, int nBytes)
+{
+	Sint16* pd = (Sint16*)pDest;
+	const Sint16* ps = (const Sint16*)pSrc;
+	int nGain = nSDLGain;
+
+	for (int i = 0; i < (nBytes >> 1); i++) {
+		int s = (ps[i] * nGain) >> 8;
+		if (s > 32767) s = 32767;
+		if (s < -32768) s = -32768;
+		pd[i] = (Sint16)s;
+	}
+}
+
 void audiospec_callback(void* /* data */, Uint8* stream, int len)
 {
-#ifdef BUILD_SDL2
-	SDL_memset(stream, 0, len);
-#endif
 	int end = nSDLPlayPos + len;
 	if (end > nAudLoopLen)
 	{
-		SDL_MixAudio(stream, (Uint8*)SDLAudBuffer + nSDLPlayPos, nAudLoopLen - nSDLPlayPos, nSDLVolume);
+		CopyWithVolume(stream, (Uint8*)SDLAudBuffer + nSDLPlayPos, nAudLoopLen - nSDLPlayPos);
 		end -= nAudLoopLen;
-		SDL_MixAudio(stream + nAudLoopLen - nSDLPlayPos, (Uint8*)SDLAudBuffer, end, nSDLVolume);
+		CopyWithVolume(stream + nAudLoopLen - nSDLPlayPos, (Uint8*)SDLAudBuffer, end);
 		nSDLPlayPos = end;
 	}
 	else
 	{
-		SDL_MixAudio(stream, (Uint8*)SDLAudBuffer + nSDLPlayPos, len, nSDLVolume);
+		CopyWithVolume(stream, (Uint8*)SDLAudBuffer + nSDLPlayPos, len);
 		nSDLPlayPos = end;
 
 		if (nSDLPlayPos == nAudLoopLen)
@@ -118,7 +137,15 @@ static int SDLSoundCheck()
 static int SDLSoundExit()
 {
 	DspExit();
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (nAudDevice)
+	{
+		SDL_CloseAudioDevice(nAudDevice);
+		nAudDevice = 0;
+	}
+#else
 	SDL_CloseAudio();
+#endif
 
 	free(SDLAudBuffer);
 	SDLAudBuffer = NULL;
@@ -142,6 +169,35 @@ static int SDLSetCallback(int (*pCallback)(int))
 	return 0;
 }
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+// SDL_AudioInit() is the way to use another driver than the one SDL picked,
+// the interface calls it too when the driver changes with no game running
+void AudSDLPickDriver()
+{
+	const char* pszCurrent = SDL_GetCurrentAudioDriver();
+
+	if (szAudSDLDriver[0])
+	{
+		if (pszCurrent == NULL || strcmp(pszCurrent, szAudSDLDriver))
+		{
+			SDL_AudioQuit();
+			if (SDL_AudioInit(szAudSDLDriver))
+			{
+				fprintf(stderr, "Couldn't use the audio driver %s: %s\n", szAudSDLDriver, SDL_GetError());
+				SDL_AudioInit(NULL);
+			}
+			bDriverPicked = true;
+		}
+	}
+	else if (bDriverPicked || pszCurrent == NULL)
+	{
+		SDL_AudioQuit();
+		SDL_AudioInit(NULL);
+		bDriverPicked = false;
+	}
+}
+#endif
+
 static int SDLSoundInit()
 {
 	SDL_AudioSpec audiospec_req;
@@ -162,6 +218,7 @@ static int SDLSoundInit()
 
 	}
 
+	memset(&audiospec_req, 0, sizeof(audiospec_req));
 	audiospec_req.freq = nAudSampleRate[0];
 	audiospec_req.format = AUDIO_S16;
 	audiospec_req.channels = 2;
@@ -187,9 +244,23 @@ static int SDLSoundInit()
 	nSDLPlayPos = 0;
 	nSDLFillSeg = nAudSegCount - 1;
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	AudSDLPickDriver();
+
+	// no format changes allowed: SDL converts to what the device wants
+	nAudDevice = SDL_OpenAudioDevice(szAudSDLDevice[0] ? szAudSDLDevice : NULL, 0, &audiospec_req, &audiospec, 0);
+	if (nAudDevice == 0 && szAudSDLDevice[0])
+	{
+		fprintf(stderr, "Couldn't open the audio device %s: %s\n", szAudSDLDevice, SDL_GetError());
+		nAudDevice = SDL_OpenAudioDevice(NULL, 0, &audiospec_req, &audiospec, 0);
+	}
+	if (nAudDevice == 0)
+#else
 	if (SDL_OpenAudio(&audiospec_req, &audiospec))
+#endif
 	{
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
+		SDLSoundExit();
 		return 1;
 	}
 	DspInit();
@@ -200,7 +271,11 @@ static int SDLSoundInit()
 
 static int SDLSoundPlay()
 {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_PauseAudioDevice(nAudDevice, 0);
+#else
 	SDL_PauseAudio(0);
+#endif
 	bAudPlaying = 1;
 
 	return 0;
@@ -208,7 +283,14 @@ static int SDLSoundPlay()
 
 static int SDLSoundStop()
 {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (nAudDevice)
+	{
+		SDL_PauseAudioDevice(nAudDevice, 1);
+	}
+#else
 	SDL_PauseAudio(1);
+#endif
 	bAudPlaying = 0;
 
 	return 0;
@@ -216,9 +298,9 @@ static int SDLSoundStop()
 
 static int SDLSoundSetVolume()
 {
-	nSDLVolume = int(SDL_MIX_MAXVOLUME * nAudVolume / 10000);
-	if (nSDLVolume > SDL_MIX_MAXVOLUME) nSDLVolume=SDL_MIX_MAXVOLUME;
-	if (nSDLVolume < 0) nSDLVolume=0;
+	nSDLGain = int(256 * nAudVolume / 10000);
+	if (nSDLGain > 512) nSDLGain = 512;
+	if (nSDLGain < 0) nSDLGain = 0;
 	return 1;
 }
 
