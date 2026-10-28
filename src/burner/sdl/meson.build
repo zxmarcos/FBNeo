@@ -27,7 +27,10 @@ frontend_sources = files(
     '../../intf/video/sdl/vid_sdl2opengl.cpp',
 )
 
-sdl2_defs = ['-DBUILD_SDL2', '-DUSE_FILE32API', '-DHAVE_UNISTD_H']
+sdl2_defs = ['-DBUILD_SDL2', '-DUSE_FILE32API']
+if cpp.get_id() != 'msvc'
+    sdl2_defs += ['-DHAVE_UNISTD_H']
+endif
 if host_machine.system() == 'windows'
     sdl2_defs += ['-DSDL_WINDOWS']
 endif

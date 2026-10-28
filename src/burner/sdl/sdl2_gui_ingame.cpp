@@ -134,9 +134,9 @@ int DIPOptionsMenuSelected()
 	current_menu = DIPOPTIONSMENU;
 
 	for (int i = 0; i < GroupDIPSwitchesArray[current_selected_dipgroup].dipSwitch.nSetting; i++) {
-		DIPOptionsMenu[i] = (MenuItem){GroupDIPSwitchesArray[current_selected_dipgroup].OptionsNamesWithCheckBoxes[i], setDIPSwitch, NULL};
+		DIPOptionsMenu[i] = MenuItem{GroupDIPSwitchesArray[current_selected_dipgroup].OptionsNamesWithCheckBoxes[i], setDIPSwitch, NULL};
 	}
-	DIPOptionsMenu[GroupDIPSwitchesArray[current_selected_dipgroup].dipSwitch.nSetting] = (MenuItem){"BACK", DIPMenuSelected, NULL};
+	DIPOptionsMenu[GroupDIPSwitchesArray[current_selected_dipgroup].dipSwitch.nSetting] = MenuItem{"BACK", DIPMenuSelected, NULL};
 	dipoptionscount = GroupDIPSwitchesArray[current_selected_dipgroup].dipSwitch.nSetting + 1;
 	return 0;
 }
@@ -153,17 +153,17 @@ int DIPMenuSelected()
 		dipmenucount = InpDIPSWCreate();
 		int i = 0;
 		while (i < dipmenucount) {
-			dipMenu[i] = (MenuItem){GroupDIPSwitchesArray[i].dipSwitch.szText, DIPOptionsMenuSelected, NULL};
+			dipMenu[i] = MenuItem{GroupDIPSwitchesArray[i].dipSwitch.szText, DIPOptionsMenuSelected, NULL};
 			isDIPchanged[i] = (GroupDIPSwitchesArray[i].DefaultDIPOption != GroupDIPSwitchesArray[i].SelectedDIPOption);
 			i++;
 		}
 		if (dipmenucount > 0) {
-			dipMenu[dipmenucount] = (MenuItem){"RESET ALL DIPSWITCHES", resetAllDIPSwitches, NULL};
+			dipMenu[dipmenucount] = MenuItem{"RESET ALL DIPSWITCHES", resetAllDIPSwitches, NULL};
 			dipmenucount++;
-			dipMenu[dipmenucount] = (MenuItem){"BACK", MainMenuSelected, NULL};
+			dipMenu[dipmenucount] = MenuItem{"BACK", MainMenuSelected, NULL};
 			dipmenucount++;
 		} else {
-			dipMenu[0] = (MenuItem){"BACK (no DIP switches found)", MainMenuSelected, NULL};
+			dipMenu[0] = MenuItem{"BACK (no DIP switches found)", MainMenuSelected, NULL};
 			dipmenucount = 1;
 		}
 	}
@@ -943,21 +943,21 @@ int PlayerDefaultsMenuSelected()
 	defaultplayerinputsmenucount = InitPlayerDefaultInputs(selectedPlayer);		// Number of inputs+macros, not menu rows
 	UpdatePlayerInputsMappingMenu();
 
-	mappingPlayerInputsMenu[0] = (MenuItem){"(Press ENTER or Joy button)", NULL, NULL};
+	mappingPlayerInputsMenu[0] = MenuItem{"(Press ENTER or Joy button)", NULL, NULL};
 
 	int i = 0;
 	while (i < defaultplayerinputsmenucount) {
-		mappingPlayerInputsMenu[2 * i + 1] = (MenuItem){playerControlsList[i].szName, NULL, NULL};
-		mappingPlayerInputsMenu[2 * i + 2] = (MenuItem){playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
+		mappingPlayerInputsMenu[2 * i + 1] = MenuItem{playerControlsList[i].szName, NULL, NULL};
+		mappingPlayerInputsMenu[2 * i + 2] = MenuItem{playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
 		i++;
 	}
 	defaultplayerinputsmenucount = defaultplayerinputsmenucount * 2 + 1;
 
-	mappingPlayerInputsMenu[defaultplayerinputsmenucount] = (MenuItem){"RESET MAPPING TO DEFAULTS", ResetPlayerDefaultsMenuSelected, NULL};
+	mappingPlayerInputsMenu[defaultplayerinputsmenucount] = MenuItem{"RESET MAPPING TO DEFAULTS", ResetPlayerDefaultsMenuSelected, NULL};
 	defaultplayerinputsmenucount++;
-	mappingPlayerInputsMenu[defaultplayerinputsmenucount] = (MenuItem){"SAVE MAPPING AS DEFAULTS", SavePlayerDefaultMapping, NULL};
+	mappingPlayerInputsMenu[defaultplayerinputsmenucount] = MenuItem{"SAVE MAPPING AS DEFAULTS", SavePlayerDefaultMapping, NULL};
 	defaultplayerinputsmenucount++;
-	mappingPlayerInputsMenu[defaultplayerinputsmenucount] = (MenuItem){"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
+	mappingPlayerInputsMenu[defaultplayerinputsmenucount] = MenuItem{"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
 	defaultplayerinputsmenucount++;
 	return 0;
 }
@@ -1023,7 +1023,7 @@ int UpdatePlayerInputsMappingMenu()
 		else if (playerControlsList[i].nCode == 0) snprintf(playerControlsList[i].MenuText, 41, "%s none", (playerControlsList[i].nInput == GIT_MACRO_AUTO ? "[ ]" : ">>>"));
 		else snprintf(playerControlsList[i].MenuText, 41, "%s PRESS KEY/BUTTON or MOVE JOY/DPAD", (playerControlsList[i].nInput == GIT_MACRO_AUTO ? "[ ]" : ">>>"));
 		if (playerControlsList[i].autoFire && (playerControlsList[i].nInput == GIT_MACRO_AUTO)) playerControlsList[i].MenuText[1] = 'X';
-		mappingPlayerInputsMenu[i * 2 + 2] = (MenuItem){playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
+		mappingPlayerInputsMenu[i * 2 + 2] = MenuItem{playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
 		i++;
 	}
 	return 0;		// Return number of inputs/macros
@@ -1046,20 +1046,20 @@ int MappingPlayerInputsSelected()
 	mappingplayerinputsmenucount = getPlayerMacros(selectedPlayer, getPlayerGameInputs(selectedPlayer, 0));		// Get player macros after player inputs
 	UpdatePlayerInputsMappingMenu();
 
-	mappingPlayerInputsMenu[0] = (MenuItem){"(Press ENTER or Joy button)", NULL, NULL};
+	mappingPlayerInputsMenu[0] = MenuItem{"(Press ENTER or Joy button)", NULL, NULL};
 	int i = 0;
 	while (i < mappingplayerinputsmenucount) {
-		mappingPlayerInputsMenu[2 * i + 1] = (MenuItem){playerControlsList[i].szName, NULL, NULL};
-		mappingPlayerInputsMenu[2 * i + 2] = (MenuItem){playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
+		mappingPlayerInputsMenu[2 * i + 1] = MenuItem{playerControlsList[i].szName, NULL, NULL};
+		mappingPlayerInputsMenu[2 * i + 2] = MenuItem{playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
 		i++;
 	}
 	mappingplayerinputsmenucount = mappingplayerinputsmenucount * 2 + 1;
 
-	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = (MenuItem){"RESET MAPPING", ResetMappingPlayerInputsSelected, NULL};
+	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = MenuItem{"RESET MAPPING", ResetMappingPlayerInputsSelected, NULL};
 	mappingplayerinputsmenucount++;
-	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = (MenuItem){"SAVE MAPPING (FOR THIS GAME)", SavePlayerInputsMapping, NULL};
+	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = MenuItem{"SAVE MAPPING (FOR THIS GAME)", SavePlayerInputsMapping, NULL};
 	mappingplayerinputsmenucount++;
-	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = (MenuItem){"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
+	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = MenuItem{"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
 	mappingplayerinputsmenucount++;
 	return 0;
 }
@@ -1253,21 +1253,21 @@ int MappingHardwareDefaultsSelected()
 	mappingplayerinputsmenucount = InitHardwareDefaultInputs();		// Number of inputs+macros, not menu rows
 	UpdatePlayerInputsMappingMenu();
 
-	mappingPlayerInputsMenu[0] = (MenuItem){"(Press ENTER or Joy button)", NULL, NULL};
+	mappingPlayerInputsMenu[0] = MenuItem{"(Press ENTER or Joy button)", NULL, NULL};
 
 	int i = 0;
 	while (i < mappingplayerinputsmenucount) {
-		mappingPlayerInputsMenu[2 * i + 1] = (MenuItem){playerControlsList[i].szName, NULL, NULL};
-		mappingPlayerInputsMenu[2 * i + 2] = (MenuItem){playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
+		mappingPlayerInputsMenu[2 * i + 1] = MenuItem{playerControlsList[i].szName, NULL, NULL};
+		mappingPlayerInputsMenu[2 * i + 2] = MenuItem{playerControlsList[i].MenuText, GetNewKeyButtonJoyToMap, NULL};
 		i++;
 	}
 	mappingplayerinputsmenucount = mappingplayerinputsmenucount * 2 + 1;
 
-	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = (MenuItem){"RESET MAPPING", ResetHardwareDefaultsSelected, NULL};
+	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = MenuItem{"RESET MAPPING", ResetHardwareDefaultsSelected, NULL};
 	mappingplayerinputsmenucount++;
-	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = (MenuItem){"SAVE MAPPING (FOR THIS HARDWARE)", SaveHardwareDefaultMapping, NULL};
+	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = MenuItem{"SAVE MAPPING (FOR THIS HARDWARE)", SaveHardwareDefaultMapping, NULL};
 	mappingplayerinputsmenucount++;
-	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = (MenuItem){"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
+	mappingPlayerInputsMenu[mappingplayerinputsmenucount] = MenuItem{"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
 	mappingplayerinputsmenucount++;
 	return 0;
 }
@@ -1448,10 +1448,10 @@ int UpdateMappingJoystickMenuSelected()
 		} else if (mappedbuttons[i] == -1) {
 			snprintf(mappingJoystickMenuList[i], 40, ">>> none");
 		} else snprintf(mappingJoystickMenuList[i], 40, ">>> PRESS KEY/BUTTON or MOVE JOY/DPAD");
-		mappingJoystickMenu[i * 2 + 2] = (MenuItem){mappingJoystickMenuList[i], GetNewJoyButtonToMap, NULL};
+		mappingJoystickMenu[i * 2 + 2] = MenuItem{mappingJoystickMenuList[i], GetNewJoyButtonToMap, NULL};
 	}
-	if (buttonsaremapped) mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = (MenuItem){"SAVE MAPPING (GLOBALLY)", SaveMappedButtons, NULL};
-	else mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = (MenuItem){"(MAP A BUTTON TO SAVE)", NULL, NULL};
+	if (buttonsaremapped) mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = MenuItem{"SAVE MAPPING (GLOBALLY)", SaveMappedButtons, NULL};
+	else mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = MenuItem{"(MAP A BUTTON TO SAVE)", NULL, NULL};
 	return 0;
 }
 
@@ -1516,19 +1516,19 @@ int MappingJoystickMenuSelected()
 		mappedbuttons[i] = -1;
 	}
 
-	mappingJoystickMenu[0] = (MenuItem){"(Press ENTER or Joy button)", NULL, NULL};
+	mappingJoystickMenu[0] = MenuItem{"(Press ENTER or Joy button)", NULL, NULL};
 	for (int i = 0; i < BUTTONS_TO_MAP; i++) {
-		mappingJoystickMenu[i * 2 + 1] = (MenuItem){buttonsList[i], NULL, NULL};
+		mappingJoystickMenu[i * 2 + 1] = MenuItem{buttonsList[i], NULL, NULL};
 		if (mappedbuttons[i] > -1) {
 			snprintf(mappingJoystickMenuList[i], 40, ">>> button %d", mappedbuttons[i]);
 			buttonsaremapped = true;
 		} else snprintf(mappingJoystickMenuList[i], 40, ">>> none");
-		mappingJoystickMenu[i * 2 + 2] = (MenuItem){mappingJoystickMenuList[i], GetNewJoyButtonToMap, NULL};
+		mappingJoystickMenu[i * 2 + 2] = MenuItem{mappingJoystickMenuList[i], GetNewJoyButtonToMap, NULL};
 	}
-	mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 1] = (MenuItem){"RESET MAPPING", ResetMappedButtons, NULL};
-	if (buttonsaremapped) mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = (MenuItem){"SAVE MAPPING (GLOBALLY)", SaveMappedButtons, NULL};
-	else mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = (MenuItem){"(MAP A BUTTON TO SAVE)", NULL, NULL};
-	mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 3] = (MenuItem){"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
+	mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 1] = MenuItem{"RESET MAPPING", ResetMappedButtons, NULL};
+	if (buttonsaremapped) mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = MenuItem{"SAVE MAPPING (GLOBALLY)", SaveMappedButtons, NULL};
+	else mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 2] = MenuItem{"(MAP A BUTTON TO SAVE)", NULL, NULL};
+	mappingJoystickMenu[BUTTONS_TO_MAP * 2 + 3] = MenuItem{"BACK (WITHOUT SAVING)", MappingMenuSelected, NULL};
 	
 	SDL_GameControllerClose(currentGameController);		// Is this necessary?
 	return 0;
@@ -1543,22 +1543,22 @@ int MappingMenuSelected()
 	current_selected_joystick = default_joystick;	// Return control to first joystick
 
 	for (int i = 0; i < nMaxPlayers; i++) {
-		playerAndJoystickMenu[i] = (MenuItem){playerNames[i], MappingPlayerInputsSelected, NULL};
+		playerAndJoystickMenu[i] = MenuItem{playerNames[i], MappingPlayerInputsSelected, NULL};
 	}
 	mappingmenucount = nMaxPlayers;
 	for (int i = 0; (i < nJoystickCount) && (i < MAX_JOYSTICKS); i++) {
 		JoystickNames[i] = SDL_GameControllerNameForIndex(i);
 		if (JoystickNames[i] == NULL) JoystickNames[i] = SDL_JoystickNameForIndex(i);	// Get joystick name if got no game controller name
-		playerAndJoystickMenu[mappingmenucount] = (MenuItem){JoystickNames[i], MappingJoystickMenuSelected, NULL};
+		playerAndJoystickMenu[mappingmenucount] = MenuItem{JoystickNames[i], MappingJoystickMenuSelected, NULL};
 		mappingmenucount++;
 	}
-	playerAndJoystickMenu[mappingmenucount] = (MenuItem){"Defaults for Player 1 (Globally)", PlayerDefaultsMenuSelected, NULL};
+	playerAndJoystickMenu[mappingmenucount] = MenuItem{"Defaults for Player 1 (Globally)", PlayerDefaultsMenuSelected, NULL};
 	mappingmenucount++;
-	playerAndJoystickMenu[mappingmenucount] = (MenuItem){"Defaults for Player 2 (Globally)", PlayerDefaultsMenuSelected, NULL};
+	playerAndJoystickMenu[mappingmenucount] = MenuItem{"Defaults for Player 2 (Globally)", PlayerDefaultsMenuSelected, NULL};
 	mappingmenucount++;
-	playerAndJoystickMenu[mappingmenucount] = (MenuItem){"Defaults for Player 3 (Globally)", PlayerDefaultsMenuSelected, NULL};
+	playerAndJoystickMenu[mappingmenucount] = MenuItem{"Defaults for Player 3 (Globally)", PlayerDefaultsMenuSelected, NULL};
 	mappingmenucount++;
-	playerAndJoystickMenu[mappingmenucount] = (MenuItem){"Defaults for Player 4 (Globally)", PlayerDefaultsMenuSelected, NULL};
+	playerAndJoystickMenu[mappingmenucount] = MenuItem{"Defaults for Player 4 (Globally)", PlayerDefaultsMenuSelected, NULL};
 	mappingmenucount++;
 
 	const char* drvname = BurnDrvGetTextA(DRV_NAME);
@@ -1580,10 +1580,10 @@ int MappingMenuSelected()
 	}
 	if (!keepsearchinghwcfg) {
 		snprintf(tempHardwareMenuText, 41, "Defaults for %s", gamehw_cfg[gamehw_cfg_index].system);
-		playerAndJoystickMenu[mappingmenucount] = (MenuItem){tempHardwareMenuText, MappingHardwareDefaultsSelected, NULL};
+		playerAndJoystickMenu[mappingmenucount] = MenuItem{tempHardwareMenuText, MappingHardwareDefaultsSelected, NULL};
 		mappingmenucount++;
 	}
-	playerAndJoystickMenu[mappingmenucount] = (MenuItem){"BACK", MainMenuSelected, NULL};
+	playerAndJoystickMenu[mappingmenucount] = MenuItem{"BACK", MainMenuSelected, NULL};
 	mappingmenucount++;
 	return 0;
 }
@@ -1634,11 +1634,11 @@ int CheatOptionsMenuSelected()
 			else snprintf(tmpoptionname, CHEAT_MAX_NAME, "[ ] %s", pCurrentCheat->pOption[i]->szOptionName);                               // Not active option
 			snprintf(pCurrentCheat->pOption[i]->szOptionName, CHEAT_MAX_NAME, "%s", tmpoptionname);
 		}
-		cheatOptionsMenu[i] = (MenuItem){pCurrentCheat->pOption[i]->szOptionName, SelectedCheatOption, NULL};
+		cheatOptionsMenu[i] = MenuItem{pCurrentCheat->pOption[i]->szOptionName, SelectedCheatOption, NULL};
 		cheatoptionscount++;
 	}
 	if (cheatoptionscount) {
-		cheatOptionsMenu[cheatoptionscount] = (MenuItem){"BACK", CheatMenuSelected, NULL};
+		cheatOptionsMenu[cheatoptionscount] = MenuItem{"BACK", CheatMenuSelected, NULL};
 		cheatoptionscount++;
 		current_menu = CHEATOPTIONSMENU;
 		snprintf(MenuTitle, TITLELENGTH, "%s", pCurrentCheat->szCheatName);
@@ -1674,19 +1674,19 @@ int CheatMenuSelected()
 		cheatcount = 0;
 		pCurrentCheat = pCheatInfo;
 		while ((pCurrentCheat) && (i < CHEAT_MAX_ADDRESS)) {
-			cheatMenu[i] = (MenuItem){pCurrentCheat->szCheatName, CheatOptionsMenuSelected, NULL};
+			cheatMenu[i] = MenuItem{pCurrentCheat->szCheatName, CheatOptionsMenuSelected, NULL};
 			if (pCurrentCheat->nCurrent) isCheatActivated[i] = true;
 			else isCheatActivated[i] = false;
 			pCurrentCheat = pCurrentCheat->pNext;
 			i++;
 		}
 		if (i > 0) {
-			cheatMenu[i] = (MenuItem){"DISABLE ALL CHEATS", DisableAllCheats, NULL};
+			cheatMenu[i] = MenuItem{"DISABLE ALL CHEATS", DisableAllCheats, NULL};
 			i++;
-			cheatMenu[i] = (MenuItem){"BACK", MainMenuSelected, NULL};
+			cheatMenu[i] = MenuItem{"BACK", MainMenuSelected, NULL};
 			cheatcount = i + 1;
 		} else {
-			cheatMenu[i] = (MenuItem){"BACK (no cheats found)", MainMenuSelected, NULL};
+			cheatMenu[i] = MenuItem{"BACK (no cheats found)", MainMenuSelected, NULL};
 			cheatcount = 1;
 		}
 	}
@@ -1721,10 +1721,10 @@ int AutoFireMenuSelected()
 	current_menu = AUTOFIREMENU;
 	current_selected_item = 0;
 	for (int i = 0; i < 6; i++) {
-		autoFireMenu[i] = (MenuItem){AutoFireMenuLines[i], SetAutoFireRate, NULL};
+		autoFireMenu[i] = MenuItem{AutoFireMenuLines[i], SetAutoFireRate, NULL};
 	}
-	autoFireMenu[6] = (MenuItem){"(hold ENTER/button over a macro)", NULL, NULL};
-	autoFireMenu[7] = (MenuItem){"BACK", MainMenuSelected, NULL};
+	autoFireMenu[6] = MenuItem{"(hold ENTER/button over a macro)", NULL, NULL};
+	autoFireMenu[7] = MenuItem{"BACK", MainMenuSelected, NULL};
 	
 	return UpdateAutoFireMenu();
 }
