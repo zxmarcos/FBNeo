@@ -96,7 +96,7 @@ static void DrawRomPaths()
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(vp->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(640.0f * fUiScale, vp->WorkSize.y * 0.8f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(UiDialogSize(640.0f, vp->WorkSize.y * 0.8f), ImGuiCond_Appearing);
 
 	if (!ImGui::BeginPopupModal("ROM Paths###rompaths", NULL, ImGuiWindowFlags_NoSavedSettings)) {
 		return;
@@ -154,7 +154,7 @@ static void DrawSupportPaths()
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(vp->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(700.0f * fUiScale, vp->WorkSize.y * 0.8f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(UiDialogSize(700.0f, vp->WorkSize.y * 0.8f), ImGuiCond_Appearing);
 
 	if (!ImGui::BeginPopupModal("Support Paths###supportpaths", NULL, ImGuiWindowFlags_NoSavedSettings)) {
 		return;

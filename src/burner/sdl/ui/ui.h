@@ -2,6 +2,7 @@
 #pragma once
 
 #include <SDL.h>
+#include "imgui.h"
 
 // ui_core.cpp
 extern float fUiScale;						// HiDPI scale of the fonts and the style
@@ -15,6 +16,7 @@ bool UiWantsKeyboard();
 bool UiWantsMouse();
 void UiSetNavigation(bool bEnable);			// keyboard/gamepad navigation, off while playing
 const char* UiText(const char* pszText);	// driver text (latin-1) to UTF-8, valid until a few more calls
+ImVec2 UiDialogSize(float fWidth, float fHeight);	// fWidth (scaled) x fHeight, at most 95% of the window
 bool UiEscapePressed();						// once per frame: the popup drawn first (the innermost) takes it
 
 // ui_app.cpp
@@ -28,7 +30,6 @@ void UiEndGame();
 void UiQuit();
 void UiToggleFullscreen();
 void UiSetWindowScale(int nScale);
-void UiOpenLegacyMenu();
 void UiShowOverlay(bool bShow);			// the game menu (Tab)
 bool UiOverlayShown();
 void UiTogglePause();
@@ -67,6 +68,33 @@ void UiGameDialogsDraw();
 void UiGameOpenStateDialog(bool bSave);
 void UiGamePrepareLaunch();					// StartGame(), once the rom scan is stopped
 void UiGameStarted();
+
+// ui_hotkeys.cpp
+enum {
+	UI_HK_PAUSE, UI_HK_FFWD, UI_HK_FFWD_TOGGLE, UI_HK_REWIND, UI_HK_GAME_MENU, UI_HK_LOAD_GAME, UI_HK_END_GAME,
+	UI_HK_STATE_LOAD, UI_HK_STATE_SAVE, UI_HK_STATE_PREV, UI_HK_STATE_NEXT, UI_HK_STATE_UNDO, UI_HK_STATE_LOAD_DIALOG, UI_HK_STATE_SAVE_DIALOG,
+	UI_HK_MEMCARD_TOGGLE, UI_HK_MAP_INPUTS, UI_HK_DIPS, UI_HK_CHEATS,
+	UI_HK_FULLSCREEN, UI_HK_TOGGLE_MENU, UI_HK_FPS, UI_HK_SCREENSHOT, UI_HK_MUTE, UI_HK_VOLUME_UP, UI_HK_VOLUME_DOWN,
+	UI_HK_COUNT
+};
+int UiHotkeyFind(const SDL_KeyboardEvent& key);		// the UI_HK_ action of a key press, -1 if none
+bool UiHotkeyUsesKey(int nAction, SDL_Keycode nKey);
+const char* UiHotkeyName(int nAction);		// "Ctrl+F9", for the menus
+void UiHotkeysSave(FILE* fp);
+bool UiHotkeysLoadLine(const char* pszLine);
+void UiHotkeysOpen();
+void UiHotkeysDraw();
+bool UiHotkeysCapturing();					// the key events go to UiHotkeysCaptureKey() then
+void UiHotkeysCaptureKey(const SDL_KeyboardEvent& key);
+void UiHotkeysTable();
+
+// ui_input.cpp
+void UiInputMappingOpen();
+void UiDipsOpen();
+void UiCheatsOpen();
+void UiInputDialogsDraw();
+bool UiInputCapturing();					// a control is being mapped: no keyboard/gamepad navigation
+void UiInputRedetect();						// gamepads plugged or unplugged
 
 // ui_paths.cpp
 void UiRomPathsOpen();

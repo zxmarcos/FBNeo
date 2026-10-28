@@ -9,6 +9,7 @@ extern bool do_reset_game;					// inp_sdl2.cpp
 extern INT32 AutoFireRateList[6];			// sdl2_gui_ingame.cpp
 extern char AutoFireRateLabels[6][10];
 extern INT32 EnableHiscores;
+extern INT32 nSocd[6];						// burn/devices/joyprocess.cpp
 extern SDL_Renderer* sdlRenderer;
 void VidSDL2SetFiltering();
 
@@ -29,7 +30,7 @@ static void GameMenu()
 
 static void VideoMenu()
 {
-	if (ImGui::MenuItem("Fullscreen", "Alt+Enter", bAppFullscreen)) {
+	if (ImGui::MenuItem("Fullscreen", UiHotkeyName(UI_HK_FULLSCREEN), bAppFullscreen)) {
 		UiToggleFullscreen();
 	}
 	if (ImGui::BeginMenu("Window Size", !bAppFullscreen)) {
@@ -73,7 +74,7 @@ static void VideoMenu()
 		bRunAhead = !bRunAhead;
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("Show FPS", "F11", bAppShowFPS)) {
+	if (ImGui::MenuItem("Show FPS", UiHotkeyName(UI_HK_FPS), bAppShowFPS)) {
 		bAppShowFPS = !bAppShowFPS;
 	}
 }
@@ -110,6 +111,16 @@ static void InputMenu()
 {
 	bool bRunning = UiGameRunning();
 
+	if (ImGui::MenuItem("Map Game Inputs...", UiHotkeyName(UI_HK_MAP_INPUTS), false, bRunning)) {
+		UiInputMappingOpen();
+	}
+	if (ImGui::MenuItem("DIP Switches...", UiHotkeyName(UI_HK_DIPS), false, bRunning)) {
+		UiDipsOpen();
+	}
+	if (ImGui::MenuItem("Cheats...", UiHotkeyName(UI_HK_CHEATS), false, bRunning)) {
+		UiCheatsOpen();
+	}
+	ImGui::Separator();
 	if (ImGui::BeginMenu("Autofire Rate")) {
 		for (int i = 0; i < 6; i++) {
 			if (ImGui::MenuItem(AutoFireRateLabels[i], NULL, nAutoFireRate == AutoFireRateList[i])) {
@@ -118,13 +129,31 @@ static void InputMenu()
 		}
 		ImGui::EndMenu();
 	}
-	if (ImGui::MenuItem("Map Game Inputs...", NULL, false, bRunning)) {
-		UiOpenLegacyMenu();
+	if (ImGui::BeginMenu("SOCD (Opposite Directions)")) {
+		// joyprocess.cpp: what the games that use it do with left+right / up+down
+		static const char* pszModes[] = { "Disabled", "SOCD-N (neutral)", "SOCD-L (last, 4-way)", "SOCD-L (last, 8-way)", "SOCD-F (first)", "SOCD-U (up wins)", "SOCD-D+L" };
+		for (int p = 0; p < 6; p++) {
+			char szPlayer[16];
+			snprintf(szPlayer, sizeof(szPlayer), "Player %d", p + 1);
+			if (ImGui::BeginMenu(szPlayer)) {
+				for (int m = 0; m < 7; m++) {
+					if (ImGui::MenuItem(pszModes[m], NULL, nSocd[p] == m)) {
+						nSocd[p] = m;
+					}
+				}
+				ImGui::EndMenu();
+			}
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("All Players: SOCD-L (8-way)")) {
+			for (int p = 0; p < 6; p++) nSocd[p] = 3;
+		}
+		ImGui::EndMenu();
 	}
 	ImGui::Separator();
 	if (ImGui::BeginMenu("Rewind")) {
 		// the buffer is made when the game starts, StateRewindReInit() makes it again
-		if (ImGui::MenuItem("Enable Rewind (hold Page Up)", NULL, bRewindEnabled != 0)) {
+		if (ImGui::MenuItem("Enable Rewind", UiHotkeyName(UI_HK_REWIND), bRewindEnabled != 0)) {
 			bRewindEnabled = !bRewindEnabled;
 			if (bRunning) StateRewindReInit();
 		}
@@ -139,6 +168,13 @@ static void InputMenu()
 			}
 		}
 		ImGui::EndMenu();
+	}
+	ImGui::Separator();
+	if (ImGui::MenuItem("Hotkeys...")) {
+		UiHotkeysOpen();
+	}
+	if (ImGui::MenuItem("Detect Gamepads", NULL, false, bRunning)) {
+		UiInputRedetect();
 	}
 }
 
@@ -209,32 +245,8 @@ static void ShortcutsPopup()
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	bool bOpen = true;
 	if (ImGui::BeginPopupModal("Keyboard Shortcuts", &bOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
-		static const char* pszKeys[][2] = {
-			{ "Tab",			"Game menu" },
-			{ "Pause",			"Pause" },
-			{ "F1 (hold)",		"Fast forward, frame advance when paused" },
-			{ "Shift+F1",		"Fast forward on / off" },
-			{ "Page Up (hold)",	"Rewind (Input > Rewind)" },
-			{ "F6",				"Save screenshot" },
-			{ "F9 / F10",		"Load / save the state of the active slot" },
-			{ "Ctrl+F9 / F10",	"Load / save a state file" },
-			{ "F8 / F7",		"Previous / next state slot" },
-			{ "Shift+F8",		"Undo the last save of the slot" },
-			{ "F11",			"Show FPS" },
-			{ "F12",			"End the game" },
-			{ "Alt+Enter",		"Fullscreen" },
-			{ "Keypad - / +",	"Volume" },
-		};
-		if (ImGui::BeginTable("##keys", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
-			for (unsigned int i = 0; i < sizeof(pszKeys) / sizeof(pszKeys[0]); i++) {
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::TextUnformatted(pszKeys[i][0]);
-				ImGui::TableNextColumn();
-				ImGui::TextUnformatted(pszKeys[i][1]);
-			}
-			ImGui::EndTable();
-		}
+		UiHotkeysTable();						// the current keys (Input > Hotkeys)
+		ImGui::TextDisabled("Change them in Input > Hotkeys.");
 		if (ImGui::Button("Close") || UiEscapePressed()) {
 			ImGui::CloseCurrentPopup();
 		}

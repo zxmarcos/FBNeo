@@ -9,12 +9,10 @@ extern int vsync;
 extern bool bSaveconfig;					// main.cpp
 extern bool do_reset_game;					// inp_sdl2.cpp
 extern SDL_Renderer* sdlRenderer;			// vid_sdl2.cpp
-extern UINT16 maxLinesMenu;					// sdl2_gui_ingame.cpp
 extern int RunInit();
 extern int RunExit();
 extern int RunIdle();
 extern INT32 display_set_controls();
-extern void ingame_gui_start(SDL_Renderer* renderer);
 void VidSDL2GetScreenSize(int* pnWidth, int* pnHeight);
 void VidSDL2DrawGame(const SDL_Rect* pArea);
 
@@ -36,7 +34,6 @@ static int nSelectorW = 0, nSelectorH = 0;	// window size of the selector, put b
 static int nLaunchDrv = -1;
 static bool bQuitRequest = false;
 static bool bEndRequest = false;
-static bool bLegacyMenuRequest = false;
 static bool bFullscreenRequest = false;
 static bool bFitWindowRequest = false;
 
@@ -44,7 +41,6 @@ void UiLaunchGame(int nDrv)		{ nLaunchDrv = nDrv; }
 void UiEndGame()				{ bEndRequest = true; }
 void UiQuit()					{ bQuitRequest = true; }
 void UiToggleFullscreen()		{ bFullscreenRequest = true; }
-void UiOpenLegacyMenu()			{ bLegacyMenuRequest = true; }
 bool UiGameRunning()			{ return bGameRunning; }
 bool UiGamePaused()				{ return bUserPause; }
 bool UiMenuMode()				{ return bMenuMode; }
@@ -195,42 +191,6 @@ static void StartGame(int nDrv)
 	UiGameStarted();
 }
 
-// The classic menus (dips, cheats, input mapping) until the ImGui versions
-// exist: they run their own loop and draw at the game resolution
-static void RunLegacyMenu()
-{
-	int w, h;
-	VidSDL2GetScreenSize(&w, &h);
-	maxLinesMenu = h / 10 - 6;
-
-	inrenderer(sdlRenderer);
-	prepare_inline_font();
-	SDL_RenderSetScale(sdlRenderer, 1.0f, 1.0f);
-	SDL_RenderSetLogicalSize(sdlRenderer, w, h);
-
-	// the menu takes the current picture as its background
-	SDL_Rect area = { 0, 0, w, h };
-	SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderClear(sdlRenderer);
-	VidSDL2DrawGame(&area);
-
-	ingame_gui_start(sdlRenderer);
-
-	SDL_RenderSetLogicalSize(sdlRenderer, 0, 0);
-	SDL_RenderSetViewport(sdlRenderer, NULL);
-	SDL_RenderSetScale(sdlRenderer, 1.0f, 1.0f);
-	kill_inline_font();
-
-	// the menu turns the controller events off and the sound back on when it closes
-	SDL_GameControllerEventState(SDL_ENABLE);
-	SDL_JoystickEventState(SDL_ENABLE);
-	if (bPaused) {
-		AudSoundStop();
-	}
-	RunReset();
-	ImGui::GetIO().ClearInputKeys();
-}
-
 static void DoRequests()
 {
 	if (bFullscreenRequest) {
@@ -244,12 +204,6 @@ static void DoRequests()
 		bFitWindowRequest = false;
 		FitWindow();
 	}
-	if (bLegacyMenuRequest) {
-		bLegacyMenuRequest = false;
-		if (bGameRunning) {
-			RunLegacyMenu();
-		}
-	}
 	if (bEndRequest) {
 		bEndRequest = false;
 		StopGame();
@@ -262,103 +216,124 @@ static void DoRequests()
 	}
 }
 
-static void GameKeyDown(const SDL_KeyboardEvent& key)
+static bool bEndHeld = false;				// the game ends when the key is released
+static int nMuteVolume = -1;
+
+static void ChangeVolume(int nDelta)
 {
-	bool bShift = (key.keysym.mod & KMOD_SHIFT) != 0;
-	bool bCtrl = (key.keysym.mod & KMOD_CTRL) != 0;
+	nMuteVolume = -1;
+	nAudVolume += nDelta;
+	if (nAudVolume < 0) nAudVolume = 0;
+	if (nAudVolume > 10000) nAudVolume = 10000;
+	AudSoundSetVolume();
+
+	char szText[32];
+	snprintf(szText, sizeof(szText), "Volume %d%%", nAudVolume / 100);
+	UpdateMessage(szText);
+}
+
+static void GameHotkey(int nAction, const SDL_KeyboardEvent& key)
+{
 	char szText[32];
 
-	switch (key.keysym.sym) {
-		case SDLK_F1:
-			if (bShift) {
-				if (!key.repeat) {
-					bUiFastToggle = !bUiFastToggle;
-					bAppDoFast = bUiFastToggle;
-				}
-			} else if (bUserPause) {
-				bAppDoStep = 1;				// frame advance
+	// only the hold actions repeat
+	if (key.repeat && nAction != UI_HK_FFWD && nAction != UI_HK_REWIND && nAction != UI_HK_VOLUME_UP && nAction != UI_HK_VOLUME_DOWN) {
+		return;
+	}
+
+	switch (nAction) {
+		case UI_HK_PAUSE:			UiTogglePause(); break;
+		case UI_HK_FFWD:
+			if (bUserPause) {
+				if (!key.repeat) bAppDoStep = 1;		// frame advance
 			} else {
 				bAppDoFast = 1;
 			}
 			break;
-		case SDLK_F9:
-			if (!key.repeat) {
-				if (bCtrl) UiGameOpenStateDialog(false);
-				else StatedLoad(nSavestateSlot);
-			}
+		case UI_HK_FFWD_TOGGLE:
+			bUiFastToggle = !bUiFastToggle;
+			bAppDoFast = bUiFastToggle;
 			break;
-		case SDLK_F10:
-			if (!key.repeat) {
-				if (bCtrl) UiGameOpenStateDialog(true);
-				else StatedSave(nSavestateSlot);
-			}
-			break;
-		case SDLK_F7:
-		case SDLK_F8:
-			if (key.repeat) {
-				break;
-			}
-			if (key.keysym.sym == SDLK_F8 && bShift) {
-				StatedUNDO(nSavestateSlot);
-				break;
-			}
-			nSavestateSlot = (key.keysym.sym == SDLK_F7) ? (nSavestateSlot % 8) + 1 : ((nSavestateSlot + 6) % 8) + 1;
+		case UI_HK_REWIND:			bAppDoRewind = 1; break;
+		case UI_HK_LOAD_GAME:		UiGameSelOpen(); break;
+		case UI_HK_END_GAME:		bEndHeld = true; break;
+		case UI_HK_STATE_LOAD:		StatedLoad(nSavestateSlot); break;
+		case UI_HK_STATE_SAVE:		StatedSave(nSavestateSlot); break;
+		case UI_HK_STATE_UNDO:		StatedUNDO(nSavestateSlot); break;
+		case UI_HK_STATE_LOAD_DIALOG:	UiGameOpenStateDialog(false); break;
+		case UI_HK_STATE_SAVE_DIALOG:	UiGameOpenStateDialog(true); break;
+		case UI_HK_STATE_PREV:
+		case UI_HK_STATE_NEXT:
+			nSavestateSlot = (nAction == UI_HK_STATE_NEXT) ? (nSavestateSlot % 8) + 1 : ((nSavestateSlot + 6) % 8) + 1;
 			snprintf(szText, sizeof(szText), "State slot %d", nSavestateSlot);
 			UpdateMessage(szText);
 			break;
-		case SDLK_PAGEUP:
-			bAppDoRewind = 1;
+		case UI_HK_MEMCARD_TOGGLE:
+			if (MemCardSupported() && (nMemoryCardStatus & 1)) {
+				MemCardToggle();
+				UpdateMessage((nMemoryCardStatus & 2) ? (char*)"Memory card inserted" : (char*)"Memory card ejected");
+			}
 			break;
-		case SDLK_F11:
-			if (!key.repeat) bAppShowFPS = !bAppShowFPS;
+		case UI_HK_MAP_INPUTS:		UiInputMappingOpen(); break;
+		case UI_HK_DIPS:			UiDipsOpen(); break;
+		case UI_HK_CHEATS:			UiCheatsOpen(); break;
+		case UI_HK_TOGGLE_MENU:
+			bUiMenuPinned = !bUiMenuPinned;
+			bFitWindowRequest = true;
 			break;
-		case SDLK_F6:
+		case UI_HK_FPS:				bAppShowFPS = !bAppShowFPS; break;
+		case UI_HK_SCREENSHOT:
 			if (!bScreenshotHeld) {
 				MakeScreenShot(0);
 				bScreenshotHeld = true;
 			}
 			break;
-		case SDLK_PAUSE:
-			if (!key.repeat) UiTogglePause();
-			break;
-		case SDLK_KP_MINUS:
-			nAudVolume -= 500;
-			if (nAudVolume < 0) nAudVolume = 0;
+		case UI_HK_MUTE:
+			if (nMuteVolume >= 0) {
+				nAudVolume = nMuteVolume;
+				nMuteVolume = -1;
+				UpdateMessage((char*)"Sound on");
+			} else {
+				nMuteVolume = nAudVolume;
+				nAudVolume = 0;
+				UpdateMessage((char*)"Sound muted");
+			}
 			AudSoundSetVolume();
 			break;
-		case SDLK_KP_PLUS:
-			nAudVolume += 500;
-			if (nAudVolume > 10000) nAudVolume = 10000;
-			AudSoundSetVolume();
-			break;
+		case UI_HK_VOLUME_UP:		ChangeVolume(500); break;
+		case UI_HK_VOLUME_DOWN:		ChangeVolume(-500); break;
 	}
 }
 
+// the releases, whatever the modifiers are then
 static void GameKeyUp(const SDL_KeyboardEvent& key)
 {
-	switch (key.keysym.sym) {
-		case SDLK_F1:
-			bAppDoFast = bUiFastToggle;
-			break;
-		case SDLK_PAGEUP:
-			bAppDoRewind = 0;
-			break;
-		case SDLK_F6:
-			bScreenshotHeld = false;
-			break;
-		case SDLK_F12:
-			// started without the menu: F12 quits, like the old interface
-			if (bMenuMode) {
-				UiEndGame();
-			} else {
-				UiQuit();
-			}
-			break;
+	SDL_Keycode nKey = key.keysym.sym;
+
+	if (UiHotkeyUsesKey(UI_HK_FFWD, nKey)) {
+		bAppDoFast = bUiFastToggle;
+	}
+	if (UiHotkeyUsesKey(UI_HK_REWIND, nKey)) {
+		bAppDoRewind = 0;
+	}
+	if (UiHotkeyUsesKey(UI_HK_SCREENSHOT, nKey)) {
+		bScreenshotHeld = false;
+	}
+	if (bEndHeld && UiHotkeyUsesKey(UI_HK_END_GAME, nKey)) {
+		bEndHeld = false;
+		// started without the menu: the game is over, like the old interface
+		if (bMenuMode) {
+			UiEndGame();
+		} else {
+			UiQuit();
+		}
 	}
 }
 
 static void HandleEvent(const SDL_Event& e)
 {
+	int nAction;
+
 	switch (e.type) {
 		case SDL_QUIT:
 			UiQuit();
@@ -374,15 +349,24 @@ static void HandleEvent(const SDL_Event& e)
 			break;
 
 		case SDL_KEYDOWN:
-			// these work whatever has the focus
-			if (e.key.keysym.sym == SDLK_RETURN && (e.key.keysym.mod & KMOD_ALT)) {
+			if (UiHotkeysCapturing()) {				// the hotkey editor waits for a key
+				UiHotkeysCaptureKey(e.key);
+				break;
+			}
+			if (UiInputCapturing()) {				// a game input is being mapped
+				break;
+			}
+			nAction = UiHotkeyFind(e.key);
+
+			// fullscreen works whatever has the focus
+			if (nAction == UI_HK_FULLSCREEN) {
 				if (!e.key.repeat) UiToggleFullscreen();
 				break;
 			}
 			if (!bGameRunning) {
 				break;
 			}
-			if (e.key.keysym.sym == SDLK_TAB && !e.key.repeat && (bOverlay || !bUiCapture)) {
+			if (nAction == UI_HK_GAME_MENU && !e.key.repeat && (bOverlay || !bUiCapture)) {
 				UiShowOverlay(!bOverlay);
 				break;
 			}
@@ -390,13 +374,13 @@ static void HandleEvent(const SDL_Event& e)
 				UiShowOverlay(false);
 				break;
 			}
-			if (!bUiCapture) {
-				GameKeyDown(e.key);
+			if (!bUiCapture && nAction >= 0) {
+				GameHotkey(nAction, e.key);
 			}
 			break;
 
 		case SDL_KEYUP:
-			if (bGameRunning && (!bUiCapture || e.key.keysym.sym == SDLK_F1 || e.key.keysym.sym == SDLK_PAGEUP)) {
+			if (bGameRunning) {
 				GameKeyUp(e.key);
 			}
 			break;
@@ -422,12 +406,13 @@ static void UpdateState()
 			SDL_SetRelativeMouseMode(SDL_FALSE);
 			bAppDoFast = 0;					// the fast forward toggle comes back with the game
 			bAppDoRewind = 0;
+			bEndHeld = false;
 		} else {
 			bAppDoFast = bUiFastToggle;
 			GameInpCheckMouse();
 		}
 	}
-	UiSetNavigation(bCapture);
+	UiSetNavigation(bCapture && !UiInputCapturing());	// the buttons of a gamepad being mapped don't click
 }
 
 static void DrawOverlay()
@@ -461,7 +446,9 @@ static void DrawOverlay()
 		if (ImGui::Button("Save Screenshot (F6)", button)) { MakeScreenShot(0); bOpen = false; }
 		if (ImGui::Button("Reset", button)) { do_reset_game = true; bOpen = false; }
 		ImGui::Separator();
-		if (ImGui::Button("DIPs, Cheats, Input Mapping...", button)) { UiOpenLegacyMenu(); bOpen = false; }
+		if (ImGui::Button("Map Game Inputs...", button)) { UiInputMappingOpen(); bOpen = false; }
+		if (ImGui::Button("DIP Switches...", button)) { UiDipsOpen(); bOpen = false; }
+		if (ImGui::Button("Cheats...", button)) { UiCheatsOpen(); bOpen = false; }
 		if (ImGui::Button("Load Game...", button)) { UiGameSelOpen(); bOpen = false; }
 		ImGui::Separator();
 		if (ImGui::Button("End Game", button)) { UiEndGame(); bOpen = false; }
@@ -578,6 +565,8 @@ int UiMain(int nDrvSelect, bool bMenu)
 			DrawOsd();
 		}
 		UiGameDialogsDraw();
+		UiInputDialogsDraw();
+		UiHotkeysDraw();
 		UiPathsDraw();
 		UiPopupsDraw();
 

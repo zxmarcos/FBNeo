@@ -371,32 +371,32 @@ static void StatesMenu(bool bRunning)
 	char szLabel[64];
 
 	snprintf(szLabel, sizeof(szLabel), "Load from Slot %d", nSavestateSlot);
-	if (ImGui::MenuItem(szLabel, "F9", false, bRunning)) {
+	if (ImGui::MenuItem(szLabel, UiHotkeyName(UI_HK_STATE_LOAD), false, bRunning)) {
 		StatedLoad(nSavestateSlot);
 	}
 	snprintf(szLabel, sizeof(szLabel), "Save to Slot %d", nSavestateSlot);
-	if (ImGui::MenuItem(szLabel, "F10", false, bRunning)) {
+	if (ImGui::MenuItem(szLabel, UiHotkeyName(UI_HK_STATE_SAVE), false, bRunning)) {
 		StatedSave(nSavestateSlot);
 	}
-	if (ImGui::MenuItem("Undo the Last Save of the Slot", "Shift+F8", false, bRunning)) {
+	if (ImGui::MenuItem("Undo the Last Save of the Slot", UiHotkeyName(UI_HK_STATE_UNDO), false, bRunning)) {
 		StatedUNDO(nSavestateSlot);
 	}
 	if (ImGui::BeginMenu("Active Slot")) {
 		SlotsMenu(bRunning);
 		ImGui::Separator();
-		if (ImGui::MenuItem("Previous Slot", "F8")) {
+		if (ImGui::MenuItem("Previous Slot", UiHotkeyName(UI_HK_STATE_PREV))) {
 			nSavestateSlot = ((nSavestateSlot + 6) % 8) + 1;
 		}
-		if (ImGui::MenuItem("Next Slot", "F7")) {
+		if (ImGui::MenuItem("Next Slot", UiHotkeyName(UI_HK_STATE_NEXT))) {
 			nSavestateSlot = (nSavestateSlot % 8) + 1;
 		}
 		ImGui::EndMenu();
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("Load State...", "Ctrl+F9")) {
+	if (ImGui::MenuItem("Load State...", UiHotkeyName(UI_HK_STATE_LOAD_DIALOG))) {
 		nDialogRequest = DIALOG_STATE_LOAD;
 	}
-	if (ImGui::MenuItem("Save State...", "Ctrl+F10", false, bRunning)) {
+	if (ImGui::MenuItem("Save State...", UiHotkeyName(UI_HK_STATE_SAVE_DIALOG), false, bRunning)) {
 		nDialogRequest = DIALOG_STATE_SAVE;
 	}
 	ImGui::Separator();
@@ -479,13 +479,13 @@ void UiGameMenu()
 		UiGameSelRescan();
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("Pause", "Pause", UiGamePaused(), bRunning)) {
+	if (ImGui::MenuItem("Pause", UiHotkeyName(UI_HK_PAUSE), UiGamePaused(), bRunning)) {
 		UiTogglePause();
 	}
-	if (ImGui::MenuItem("Frame Advance", "F1 (paused)", false, bRunning && UiGamePaused())) {
+	if (ImGui::MenuItem("Frame Advance", UiHotkeyName(UI_HK_FFWD), false, bRunning && UiGamePaused())) {
 		bAppDoStep = 1;
 	}
-	if (ImGui::MenuItem("Fast Forward", "Shift+F1", bUiFastToggle != 0, bRunning)) {
+	if (ImGui::MenuItem("Fast Forward", UiHotkeyName(UI_HK_FFWD_TOGGLE), bUiFastToggle != 0, bRunning)) {
 		bUiFastToggle = !bUiFastToggle;
 		bAppDoFast = bUiFastToggle;
 	}
@@ -516,15 +516,12 @@ void UiGameMenu()
 		MemCardMenu();
 		ImGui::EndMenu();
 	}
-	if (ImGui::MenuItem("Save Screenshot", "F6", false, bRunning)) {
+	if (ImGui::MenuItem("Save Screenshot", UiHotkeyName(UI_HK_SCREENSHOT), false, bRunning)) {
 		MakeScreenShot(0);
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("DIPs, Cheats, Input Mapping...", NULL, false, bRunning)) {
-		UiOpenLegacyMenu();
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("End Game", "F12", false, bRunning)) {
+
+	if (ImGui::MenuItem("End Game", UiHotkeyName(UI_HK_END_GAME), false, bRunning)) {
 		UiEndGame();
 	}
 	if (ImGui::MenuItem("Exit")) {
