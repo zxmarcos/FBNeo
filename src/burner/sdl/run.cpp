@@ -3,6 +3,9 @@
 #ifdef BUILD_SDL2
 #include "sdl2_gui_common.h"
 #endif
+#ifdef BUILD_SDL2_IMGUI
+#include "ui.h"
+#endif
 #ifndef _MSC_VER
 #include <sys/time.h>
 #endif
@@ -17,8 +20,9 @@ int counter;                                // General purpose variable used whe
 static unsigned int nNormalLast = 0;        // Last value of GetTime()
 static int          nNormalFrac = 0;        // Extra fraction we did
 
-static bool bAppDoStep = 0;
+bool        bAppDoStep = 0;
 bool        bAppDoFast = 0;
+bool        bAppDoRewind = 0;
 bool        bAppShowFPS = 0;
 static int  nFastSpeed = 6;
 static bool bscreenshot = 0;
@@ -111,6 +115,89 @@ void UpdateMessage(char* message)
 	messageFrames = MESSAGE_MAX_FRAMES;
 }
 
+// the messages of the core (rewind)
+INT32 VidSNewShortMsg(const TCHAR* pText, INT32, INT32, INT32)
+{
+	UpdateMessage((char*)pText);
+	return 0;
+}
+
+// The system macros of the input mapping (pause, FFWD, frame advance,
+// slow-mo, the state slots), as CheckSystemMacros() of the Win32 build.
+// The state actions wait for the end of the frame.
+static int nStateAction = 0;
+enum { STATE_ACTION_NONE, STATE_ACTION_LOAD, STATE_ACTION_SAVE, STATE_ACTION_NEXT, STATE_ACTION_PREV, STATE_ACTION_UNDO };
+
+static void CheckSystemMacros()
+{
+	static UINT8 prevPause = 0, prevFrame = 0, prevFFWD = 0;
+	static UINT8 prevLoad = 0, prevSave = 0, prevNext = 0, prevPrev = 0, prevUndo = 0;
+
+	if (macroSystemPause && !prevPause) {
+#ifdef BUILD_SDL2_IMGUI
+		UiTogglePause();
+#else
+		bRunPause = !bRunPause;
+#endif
+	}
+	prevPause = macroSystemPause;
+
+	if (macroSystemFFWD) {
+		bAppDoFast = 1;
+		prevFFWD = 1;
+	} else if (prevFFWD) {
+		bAppDoFast = 0;
+		prevFFWD = 0;
+	}
+
+	if (macroSystemFrame && !prevFrame) {
+		if (bRunPause) {
+			bAppDoStep = 1;
+		} else {
+#ifdef BUILD_SDL2_IMGUI
+			UiTogglePause();
+#else
+			bRunPause = 1;
+#endif
+		}
+	}
+	prevFrame = macroSystemFrame;
+
+	int nSlow = macroSystemSlowMo[0] * 1 + macroSystemSlowMo[1] * 2 + macroSystemSlowMo[2] * 3 + macroSystemSlowMo[3] * 4 + macroSystemSlowMo[4] * 5;
+	if (nSlow >= 1 && nSlow <= 5) {
+		nSlowMo = nSlow - 1;
+	}
+
+	if (macroSystemLoadState && !prevLoad) nStateAction = STATE_ACTION_LOAD;
+	if (macroSystemSaveState && !prevSave) nStateAction = STATE_ACTION_SAVE;
+	if (macroSystemNextState && !prevNext) nStateAction = STATE_ACTION_NEXT;
+	if (macroSystemPreviousState && !prevPrev) nStateAction = STATE_ACTION_PREV;
+	if (macroSystemUNDOState && !prevUndo) nStateAction = STATE_ACTION_UNDO;
+	prevLoad = macroSystemLoadState;
+	prevSave = macroSystemSaveState;
+	prevNext = macroSystemNextState;
+	prevPrev = macroSystemPreviousState;
+	prevUndo = macroSystemUNDOState;
+}
+
+static void DoStateAction()
+{
+	char szText[32];
+
+	switch (nStateAction) {
+		case STATE_ACTION_LOAD: StatedLoad(nSavestateSlot); break;
+		case STATE_ACTION_SAVE: StatedSave(nSavestateSlot); break;
+		case STATE_ACTION_UNDO: StatedUNDO(nSavestateSlot); break;
+		case STATE_ACTION_NEXT:
+		case STATE_ACTION_PREV:
+			nSavestateSlot = (nStateAction == STATE_ACTION_NEXT) ? (nSavestateSlot % 8) + 1 : ((nSavestateSlot + 6) % 8) + 1;
+			snprintf(szText, sizeof(szText), "State slot %d", nSavestateSlot);
+			UpdateMessage(szText);
+			break;
+	}
+	nStateAction = STATE_ACTION_NONE;
+}
+
 // define this function somewhere above RunMessageLoop()
 void ToggleLayer(unsigned char thisLayer)
 {
@@ -160,15 +247,21 @@ static int RunFrame(int bDraw, int bPause)
 		return 1;
 	}
 
-	// SlowMo stuff
+	if (nStateAction) {
+		DoStateAction();
+	}
+
+	// SlowMo T.A. (the values of the Win32 build: 1 = 75%, then 50%, 25%...)
 	flippy++;
-	nSlowMo = macroSystemSlowMo[0] + macroSystemSlowMo[1] * 2 + macroSystemSlowMo[2] * 3 + macroSystemSlowMo[3] * 4 + macroSystemSlowMo[4] * 5;
-	if ((nSlowMo == 1) && ((flippy % 4) == 0)) return 0;		// 75% speed
-	else if ((nSlowMo > 1) && (nSlowMo < 6) && (flippy % ((nSlowMo - 1) * 2)) < (((nSlowMo - 1) * 2) - 1)) return 0;		// 50% and less
+	if (nSlowMo) {
+		if (nSlowMo == 1) { if ((flippy % 4) == 0) return 0; }
+		else if ((flippy % ((nSlowMo - 1) * 2)) < (((nSlowMo - 1) * 2) - 1)) return 0;
+	}
 
 	if (bPause)
 	{
 		InputMake(false);
+		CheckSystemMacros();
 		VidPaint(0);
 		return 0;			// keep the picture, don't run the driver
 	}
@@ -177,6 +270,7 @@ static int RunFrame(int bDraw, int bPause)
 		nFramesEmulated++;
 		nCurrentFrame++;
 		InputMake(true);
+		CheckSystemMacros();
 	}
 
 	if (bDraw)
@@ -220,6 +314,10 @@ static int RunFrame(int bDraw, int bPause)
 		pBurnDraw = NULL;                    // Make sure no image is drawn
 		BurnDrvFrame();
 	}
+
+#ifdef BUILD_SDL2
+	StateRewindDoFrame(macroSystemRewind || bAppDoRewind, macroSystemRewindCancel, bRunPause);
+#endif
 
 	if (bAppShowFPS) {
 		if (nDoFPS < nFramesRendered) {
@@ -321,7 +419,7 @@ int RunIdle()
 	}
 	if (bRunPause) {
 		if (bAppDoStep) {					// Step one frame
-			nCount = 10;
+			nCount = 0;
 		}
 		else {
 			RunFrame(1, 1);					// Paused

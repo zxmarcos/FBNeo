@@ -48,7 +48,7 @@ bool bBurnUseASMCPUEmulation = false;
 #define INCLUDE_RUNAHEAD_SUPPORT
 #endif
 
-#if defined(BUILD_WIN32)
+#if defined(BUILD_WIN32) || defined(BUILD_SDL2)
 #define INCLUDE_REWIND_SUPPORT
 #endif
 

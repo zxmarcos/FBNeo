@@ -209,6 +209,7 @@ int DrvExit()
 				bSaveRAM = false;
 			}
 
+			MemCardExit();                                         // Write the memory cards back
 			ConfigGameSave(bSaveInputs);
 			GameInpExit();                                         // Exit game input
 			BurnDrvExit();                                         // Exit the driver

@@ -7,6 +7,11 @@ INT32  nReplayUndoCount = 0;
 UINT32 nReplayCurrentFrame = 0;
 UINT32 nStartFrame = 0;
 
+INT32 FreezeInputSize()
+{
+	return 0;
+}
+
 INT32 FreezeInput(UINT8** buf, INT32* size)
 {
 	return 0;
