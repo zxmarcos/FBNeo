@@ -86,6 +86,14 @@ void UiFirstRunCheck();						// the license, once per version
 void UiGameInfoOpen(int nDrv);
 void UiGameInfoDraw();
 
+// ui_ips.cpp
+void UiIpsOpen(int nDrv);					// the IPS manager of a game
+void UiIpsDraw();
+bool UiIpsHasPatches(int nDrv);				// it has a folder of dats in szAppIpsPath
+int UiIpsActiveCount(int nDrv);				// the patches saved in its config/ips/<game>.ini
+void UiIpsArmLaunch(bool bArm);				// the next game loads with its saved patches
+void UiIpsBeforeLoad();						// StartGame(), nBurnDrvActive set
+
 // ui_menubar.cpp
 void UiMenuBarDraw();
 float UiMenuBarHeight();					// height reserved for the menu bar, 0 when it floats over the game
