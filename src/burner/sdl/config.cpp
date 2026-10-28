@@ -3,6 +3,7 @@
 #ifdef BUILD_SDL2_IMGUI
 #include "ui.h"
 #include "gamelist_model.h"
+extern INT32 nSocd[6];			// burn/devices/joyprocess.cpp
 #endif
 
 int nIniVersion = 0;
@@ -161,6 +162,22 @@ int ConfigAppLoad()
 		}
 		VAR(bRunAhead);
 		VAR(bAlwaysDrawFrames);
+		UiHotkeysLoadLine(szLine);
+		VAR(nSocd[0]);
+		VAR(nSocd[1]);
+		VAR(nSocd[2]);
+		VAR(nSocd[3]);
+		VAR(nSocd[4]);
+		VAR(nSocd[5]);
+		for (int i = 0; i < 4; i++) {
+			char szLabel[40];
+			snprintf(szLabel, sizeof(szLabel), "nPlayerDefaultControls[%d]", i);
+			char *szValue = LabelCheck(szLine, szLabel);
+			if (szValue) nPlayerDefaultControls[i] = strtol(szValue, NULL, 0);
+			snprintf(szLabel, sizeof(szLabel), "szPlayerDefaultIni[%d] ", i);
+			szValue = LabelCheck(szLine, szLabel);
+			if (szValue) snprintf(szPlayerDefaultIni[i], MAX_PATH, "%s", szValue);
+		}
 #endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
@@ -311,6 +328,19 @@ int ConfigAppSave()
 	VAR(bRunAhead);
 	fprintf(f, "\n// If zero, frames are skipped when the emulation is too slow\n");
 	VAR(bAlwaysDrawFrames);
+	UiHotkeysSave(f);
+	fprintf(f, "\n// SOCD mode of each player: 0 off, 1 N, 2 L (4-way), 3 L (8-way), 4 F, 5 U, 6 D+L\n");
+	VAR(nSocd[0]);
+	VAR(nSocd[1]);
+	VAR(nSocd[2]);
+	VAR(nSocd[3]);
+	VAR(nSocd[4]);
+	VAR(nSocd[5]);
+	fprintf(f, "\n// The default controls of the players: device | analog mode << 4, or a preset file\n");
+	for (int i = 0; i < 4; i++) {
+		fprintf(f, "nPlayerDefaultControls[%d] %d\n", i, nPlayerDefaultControls[i]);
+		fprintf(f, "szPlayerDefaultIni[%d] %s\n", i, szPlayerDefaultIni[i]);
+	}
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);

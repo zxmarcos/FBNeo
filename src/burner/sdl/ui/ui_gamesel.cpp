@@ -961,7 +961,7 @@ static void MvsPicker()
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(vp->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(560.0f * fUiScale, vp->WorkSize.y * 0.7f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(UiDialogSize(560.0f, vp->WorkSize.y * 0.7f), ImGuiCond_Appearing);
 	if (!ImGui::BeginPopupModal("Select a Cartridge###mvspick", NULL, ImGuiWindowFlags_NoSavedSettings)) {
 		return;
 	}

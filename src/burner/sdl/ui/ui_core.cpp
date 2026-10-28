@@ -271,6 +271,15 @@ void UiSetNavigation(bool bEnable)
 	}
 }
 
+ImVec2 UiDialogSize(float fWidth, float fHeight)
+{
+	ImGuiViewport* vp = ImGui::GetMainViewport();
+	float w = fWidth * fUiScale, h = fHeight;
+	if (w > vp->WorkSize.x * 0.95f) w = vp->WorkSize.x * 0.95f;
+	if (h > vp->WorkSize.y * 0.95f) h = vp->WorkSize.y * 0.95f;
+	return ImVec2(w, h);
+}
+
 // Closing a popup gives the focus back to its parent in the same frame, which
 // would see the same Escape and close too
 bool UiEscapePressed()
