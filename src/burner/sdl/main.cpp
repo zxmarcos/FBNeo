@@ -14,6 +14,9 @@
  * ------------------*/
 
 #include "burner.h"
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 
 INT32 display_set_controls();
 
@@ -120,11 +123,35 @@ int parseSwitches(int argc, char* argv[])
 	return 0;
 }
 
+// Creates every directory of the path
+static void MakeDirs(const char* pszPath)
+{
+	char szDir[MAX_PATH];
+	snprintf(szDir, sizeof(szDir), "%s", pszPath);
+
+	for (char* p = szDir + 1; ; p++) {
+		if (*p == '/' || *p == '\\' || *p == '\0') {
+			char c = *p;
+			*p = '\0';
+#ifdef _WIN32
+			CreateDirectoryA(szDir, NULL);
+#else
+			mkdir(szDir, 0755);
+#endif
+			*p = c;
+			if (c == '\0') {
+				break;
+			}
+		}
+	}
+}
+
 void generateDats()
 {
 	char filename[1024] = { 0 };
 
 #if defined(BUILD_SDL2)
+	MakeDirs(szAppDatListsPath);
 	printf("Creating fbneo dats in %s\n", szAppDatListsPath);
 #if defined(ALT_DAT)
 	_stprintf(filename, _T("%sFBNeo_-_ALL_SYSTEMS.dat"), szAppDatListsPath);
@@ -353,6 +380,21 @@ int main(int argc, char* argv[])
 #ifdef BUILD_SDL2
 #ifdef SDL_WINDOWS
 	char *base_path = SDL_GetBasePath();
+
+	// everything (fbneo.ini, config/, roms/, support/...) is relative to the
+	// executable's directory, whatever the directory it was started from
+	if (CDEmuImage[0])
+	{
+		char szFullPath[MAX_PATH];
+		if (_fullpath(szFullPath, CDEmuImage, MAX_PATH))
+		{
+			_tcscpy(CDEmuImage, szFullPath);
+		}
+	}
+	if (base_path)
+	{
+		SetCurrentDirectoryA(base_path);
+	}
 #define DIRCNT 9
 	// Make sure there are roms and cfg subdirectories
 	TCHAR szDirs[DIRCNT][MAX_PATH] = {
@@ -368,12 +410,13 @@ int main(int argc, char* argv[])
 	};
 	TCHAR currentPath[MAX_PATH];
 	for(int x = 0; x < DIRCNT; x++) {
-		snprintf(currentPath, MAX_PATH, "%s%s", base_path, szDirs[x]);
+		snprintf(currentPath, MAX_PATH, "%s%s", base_path ? base_path : "", szDirs[x]);
 		CreateDirectory(currentPath, NULL);
 	}
 #undef DIRCNT
+	SDL_free(base_path);
 
-	SDL_setenv("SDL_AUDIODRIVER", "directsound", true);        // fix audio for windows
+	SDL_setenv("SDL_AUDIODRIVER", "directsound", false);        // fix audio for windows (unless the user picked a driver)
 #endif
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO) < 0)
 	{
@@ -384,8 +427,8 @@ int main(int argc, char* argv[])
 
 	//SDL_ShowCursor(SDL_DISABLE);
 
-#if defined(BUILD_SDL2) && !defined(SDL_WINDOWS)
-    // Load mapping from file if it exists
+#if defined(BUILD_SDL2)
+    // Load mapping from file if it exists (the input mapping menu saves it there on every system)
 	char gamecontrollerdbfile[MAX_PATH] = _T("");
 	TCHAR *szSDLconfigPath = NULL;
 	szSDLconfigPath = SDL_GetPrefPath("fbneo", "config");
@@ -404,7 +447,7 @@ int main(int argc, char* argv[])
 		ConfigAppSave();		// for SDL2 this will also create folders in ~/.local/share/fbneo/
 	}
 	ComputeGammaLUT();
-#if defined(BUILD_SDL2) && !defined(SDL_WINDOWS)
+#if defined(BUILD_SDL2)
 	bprintf = AppDebugPrintf;
 #endif
 	BurnLibInit();
