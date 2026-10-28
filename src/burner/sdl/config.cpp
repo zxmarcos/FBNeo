@@ -1,5 +1,8 @@
 // Burner Config file module
 #include "burner.h"
+#ifdef BUILD_SDL2_IMGUI
+#include "ui.h"
+#endif
 
 int nIniVersion = 0;
 
@@ -116,6 +119,12 @@ int ConfigAppLoad()
 		VAR(bShowClones);
 		VAR(gameSelectedFromFilter);
 #endif
+#ifdef BUILD_SDL2_IMGUI
+		VAR(bUiMenuPinned);
+		VAR(bUiPauseOnMenu);
+		VAR(bUiPauseOnFocusLoss);
+		VAR(nAudVolume);
+#endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
 		FLT(nGamma);
@@ -221,6 +230,16 @@ int ConfigAppSave()
 	VAR(bShowClones);
 	fprintf(f, "\n// Last game selected from filter\n");
 	VAR(gameSelectedFromFilter);
+#endif
+#ifdef BUILD_SDL2_IMGUI
+	fprintf(f, "\n// If non-zero, the menu bar is always shown in a window (it floats over the game otherwise)\n");
+	VAR(bUiMenuPinned);
+	fprintf(f, "\n// If non-zero, pause the game while a menu or a dialog is open\n");
+	VAR(bUiPauseOnMenu);
+	fprintf(f, "\n// If non-zero, pause the game when the window loses the focus\n");
+	VAR(bUiPauseOnFocusLoss);
+	fprintf(f, "\n// Sound volume (0 - 10000)\n");
+	VAR(nAudVolume);
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);

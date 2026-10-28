@@ -54,22 +54,85 @@ void RenderMessage()
 	}
 }
 
+#ifdef BUILD_SDL2_IMGUI
+// With the ImGui interface the window and the renderer belong to ui_core.cpp,
+// this module keeps the game texture, which the interface draws every frame.
+
+void VidSDL2SetFiltering()
+{
+	if (sdlTexture) {
+		SDL_ScaleMode nMode = SDL_ScaleModeNearest;
+		if (videofiltering[0] == '1') nMode = SDL_ScaleModeLinear;
+		if (videofiltering[0] == '2') nMode = SDL_ScaleModeBest;
+		SDL_SetTextureScaleMode(sdlTexture, nMode);
+	}
+}
+
+// Size of the game picture on screen, before scaling
+void VidSDL2GetScreenSize(int* pnWidth, int* pnHeight)
+{
+	*pnWidth = nRotateGame ? display_h : display_w;
+	*pnHeight = nRotateGame ? display_w : display_h;
+}
+
+// Draws the game in pArea (window coordinates), keeping the aspect ratio
+void VidSDL2DrawGame(const SDL_Rect* pArea)
+{
+	if (sdlTexture == NULL || pArea->w <= 0 || pArea->h <= 0) {
+		return;
+	}
+
+	int w, h;
+	VidSDL2GetScreenSize(&w, &h);
+
+	int nOutW = pArea->w, nOutH = pArea->h;
+	if (!bVidFullStretch) {
+		double dScale = SDL_min((double)pArea->w / w, (double)pArea->h / h);
+		if (bIntegerScale && dScale >= 1.0) {
+			dScale = floor(dScale);
+		}
+		nOutW = (int)(w * dScale + 0.5);
+		nOutH = (int)(h * dScale + 0.5);
+	}
+
+	// SDL_RenderCopyEx() rotates around the centre, so the rectangle is given unrotated
+	SDL_Rect dst;
+	dst.w = nRotateGame ? nOutH : nOutW;
+	dst.h = nRotateGame ? nOutW : nOutH;
+	dst.x = pArea->x + (pArea->w - dst.w) / 2;
+	dst.y = pArea->y + (pArea->h - dst.h) / 2;
+
+	if (nRotateGame) {
+		SDL_RenderCopyEx(sdlRenderer, sdlTexture, NULL, &dst, (bFlipped ? 90 : 270), NULL, SDL_FLIP_NONE);
+	} else if (bFlipped) {
+		SDL_RenderCopyEx(sdlRenderer, sdlTexture, NULL, &dst, 180, NULL, SDL_FLIP_NONE);
+	} else {
+		SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, &dst);
+	}
+}
+#endif
+
 static int Exit()
 {
 #ifdef INCLUDE_SWITCHRES
 	sr_deinit();
 #endif
+#ifndef BUILD_SDL2_IMGUI
 	kill_inline_font(); //TODO: This is not supposed to be here
+#endif
 	SDL_DestroyTexture(sdlTexture);
 	sdlTexture = NULL;
+#ifndef BUILD_SDL2_IMGUI
 	SDL_DestroyRenderer(sdlRenderer);
 	sdlRenderer = NULL;
 	SDL_DestroyWindow(sdlWindow);
 	sdlWindow = NULL;
-	
+#endif
+
 	if (VidMem)
 	{
 		free(VidMem);
+		VidMem = NULL;
 	}
 	return 0;
 }
@@ -204,6 +267,7 @@ static int Init()
 	sr_switch_to_mode(display_w, display_h, rr, interlace, &srm);
 #endif
 
+#ifndef BUILD_SDL2_IMGUI
 	if (nRotateGame)
 	{
 		sdlWindow = SDL_CreateWindow(
@@ -255,6 +319,7 @@ static int Init()
 	}
 
 	SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_NONE);
+#endif
 
 	nVidImageDepth = 32;
 
@@ -268,6 +333,7 @@ static int Init()
 #ifdef FBNEO_DEBUG
 	printf("bbp: %d\n", nVidImageDepth);
 #endif
+#ifndef BUILD_SDL2_IMGUI
 	if (bIntegerScale)
 	{
 		SDL_RenderSetIntegerScale(sdlRenderer, SDL_TRUE);
@@ -284,6 +350,7 @@ static int Init()
 	inrenderer(sdlRenderer); //TODO: this is not supposed to be here
 	prepare_inline_font();   // TODO: BAD
 	incolor(0xFFF000, 0);
+#endif
 
 	if (nVidImageDepth == 32)
 	{
@@ -304,6 +371,9 @@ static int Init()
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create sdlTexture from surface: %s", SDL_GetError());
 		return 3;
 	}
+#ifdef BUILD_SDL2_IMGUI
+	VidSDL2SetFiltering();
+#endif
 
 	nVidImageBPP = (nVidImageDepth + 7) >> 3;
 	nBurnBpp = nVidImageBPP;
@@ -365,6 +435,11 @@ static int Frame(bool bRedraw)                                          // bRedr
 // Paint the BlitFX surface onto the primary surface
 static int Paint(int bValidate)
 {
+#ifdef BUILD_SDL2_IMGUI
+	// UiPresent() draws it with the interface
+	SDL_UpdateTexture(sdlTexture, NULL, pVidImage, nVidImagePitch);
+	return 0;
+#endif
 
 	SDL_RenderClear(sdlRenderer);
 	SDL_UpdateTexture(sdlTexture, NULL, pVidImage, nVidImagePitch);

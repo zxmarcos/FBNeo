@@ -422,8 +422,11 @@ int SDLinpInit()
 		}
 	}
 
+#ifndef BUILD_SDL2_IMGUI
+	// (the ImGui interface needs the events for the gamepad navigation)
 	SDL_GameControllerEventState(SDL_IGNORE);
 	SDL_JoystickEventState(SDL_IGNORE);
+#endif
 
 	// Set up the keyboard
 	SDLinpKeyboardInit();

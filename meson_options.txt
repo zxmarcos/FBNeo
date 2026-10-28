@@ -3,6 +3,11 @@ option('frontend',
     choices: ['auto', 'sdl2', 'win32', 'qt', 'macos', 'pi', 'psp'],
     value: 'auto',
     description: 'Frontend implementation to build')
+option('sdl_gui',
+    type: 'combo',
+    choices: ['imgui', 'legacy'],
+    value: 'imgui',
+    description: 'SDL2 frontend interface: Dear ImGui, or the legacy menus')
 option('include_7z', type: 'boolean', value: true, description: 'Include 7-zip archive support')
 option('force_pulse_audio', type: 'boolean', value: false, description: 'Use PulseAudio simple backend')
 option('rom_verify', type: 'boolean', value: false, description: 'Include ROM set verification features')
