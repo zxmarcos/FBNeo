@@ -53,6 +53,7 @@ if get_option('sdl_gui') == 'imgui'
         'ui/ui_app.cpp',
         'ui/ui_core.cpp',
         'ui/ui_filebrowser.cpp',
+        'ui/ui_game.cpp',
         'ui/ui_gamesel.cpp',
         'ui/ui_image.cpp',
         'ui/ui_menubar.cpp',

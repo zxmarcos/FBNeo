@@ -127,6 +127,8 @@ static void StopGame()
 	bOverlay = false;
 	bUserPause = false;
 	bAppDoFast = 0;
+	bUiFastToggle = 0;
+	bAppDoRewind = 0;
 	bUiCapture = false;
 
 	if (bSaveconfig) {
@@ -148,6 +150,7 @@ static void StartGame(int nDrv)
 	UiGameSelStopScan();				// the rom scan thread uses nBurnDrvActive
 	StopGame();
 	UiGameSelClose();
+	UiGamePrepareLaunch();
 
 	if (nDrv < 0 || (UINT32)nDrv >= nBurnDrvCount) {
 		return;
@@ -189,6 +192,7 @@ static void StartGame(int nDrv)
 	SetTitle();
 	FitWindow();
 	GameInpCheckMouse();
+	UiGameStarted();
 }
 
 // The classic menus (dips, cheats, input mapping) until the ImGui versions
@@ -260,15 +264,50 @@ static void DoRequests()
 
 static void GameKeyDown(const SDL_KeyboardEvent& key)
 {
+	bool bShift = (key.keysym.mod & KMOD_SHIFT) != 0;
+	bool bCtrl = (key.keysym.mod & KMOD_CTRL) != 0;
+	char szText[32];
+
 	switch (key.keysym.sym) {
 		case SDLK_F1:
-			bAppDoFast = 1;
+			if (bShift) {
+				if (!key.repeat) {
+					bUiFastToggle = !bUiFastToggle;
+					bAppDoFast = bUiFastToggle;
+				}
+			} else if (bUserPause) {
+				bAppDoStep = 1;				// frame advance
+			} else {
+				bAppDoFast = 1;
+			}
 			break;
 		case SDLK_F9:
-			QuickState(0);
+			if (!key.repeat) {
+				if (bCtrl) UiGameOpenStateDialog(false);
+				else StatedLoad(nSavestateSlot);
+			}
 			break;
 		case SDLK_F10:
-			QuickState(1);
+			if (!key.repeat) {
+				if (bCtrl) UiGameOpenStateDialog(true);
+				else StatedSave(nSavestateSlot);
+			}
+			break;
+		case SDLK_F7:
+		case SDLK_F8:
+			if (key.repeat) {
+				break;
+			}
+			if (key.keysym.sym == SDLK_F8 && bShift) {
+				StatedUNDO(nSavestateSlot);
+				break;
+			}
+			nSavestateSlot = (key.keysym.sym == SDLK_F7) ? (nSavestateSlot % 8) + 1 : ((nSavestateSlot + 6) % 8) + 1;
+			snprintf(szText, sizeof(szText), "State slot %d", nSavestateSlot);
+			UpdateMessage(szText);
+			break;
+		case SDLK_PAGEUP:
+			bAppDoRewind = 1;
 			break;
 		case SDLK_F11:
 			if (!key.repeat) bAppShowFPS = !bAppShowFPS;
@@ -299,7 +338,10 @@ static void GameKeyUp(const SDL_KeyboardEvent& key)
 {
 	switch (key.keysym.sym) {
 		case SDLK_F1:
-			bAppDoFast = 0;
+			bAppDoFast = bUiFastToggle;
+			break;
+		case SDLK_PAGEUP:
+			bAppDoRewind = 0;
 			break;
 		case SDLK_F6:
 			bScreenshotHeld = false;
@@ -354,7 +396,7 @@ static void HandleEvent(const SDL_Event& e)
 			break;
 
 		case SDL_KEYUP:
-			if (bGameRunning && (!bUiCapture || e.key.keysym.sym == SDLK_F1)) {
+			if (bGameRunning && (!bUiCapture || e.key.keysym.sym == SDLK_F1 || e.key.keysym.sym == SDLK_PAGEUP)) {
 				GameKeyUp(e.key);
 			}
 			break;
@@ -378,8 +420,10 @@ static void UpdateState()
 		bUiCapture = bCapture;
 		if (bCapture) {
 			SDL_SetRelativeMouseMode(SDL_FALSE);
-			bAppDoFast = 0;
+			bAppDoFast = 0;					// the fast forward toggle comes back with the game
+			bAppDoRewind = 0;
 		} else {
+			bAppDoFast = bUiFastToggle;
 			GameInpCheckMouse();
 		}
 	}
@@ -409,8 +453,11 @@ static void DrawOverlay()
 		if (ImGui::Button("Resume", button)) bOpen = false;
 		ImGui::SetItemDefaultFocus();
 		ImGui::Separator();
-		if (ImGui::Button("Save State (F10)", button)) { QuickState(1); bOpen = false; }
-		if (ImGui::Button("Load State (F9)", button)) { QuickState(0); bOpen = false; }
+		char szLabel[64];
+		snprintf(szLabel, sizeof(szLabel), "Save State to Slot %d (F10)", nSavestateSlot);
+		if (ImGui::Button(szLabel, button)) { StatedSave(nSavestateSlot); bOpen = false; }
+		snprintf(szLabel, sizeof(szLabel), "Load State from Slot %d (F9)", nSavestateSlot);
+		if (ImGui::Button(szLabel, button)) { StatedLoad(nSavestateSlot); bOpen = false; }
 		if (ImGui::Button("Save Screenshot (F6)", button)) { MakeScreenShot(0); bOpen = false; }
 		if (ImGui::Button("Reset", button)) { do_reset_game = true; bOpen = false; }
 		ImGui::Separator();
@@ -530,6 +577,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 			DrawOverlay();
 			DrawOsd();
 		}
+		UiGameDialogsDraw();
 		UiPathsDraw();
 		UiPopupsDraw();
 

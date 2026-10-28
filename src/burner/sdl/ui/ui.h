@@ -57,6 +57,16 @@ void UiGameSelClose();
 void UiGameSelRescan();
 void UiGameSelStopScan();					// before anything else uses nBurnDrvActive
 void UiGameSelReloadImages();				// the image paths changed
+void UiGameSelPlay(int nDrv);				// with the MVS slots and the not working confirmation
+
+// ui_game.cpp
+extern char szPrevGames[10][32];			// recent games, kept in the ini
+extern int bUiFastToggle;					// fast forward on until toggled off
+void UiGameMenu();
+void UiGameDialogsDraw();
+void UiGameOpenStateDialog(bool bSave);
+void UiGamePrepareLaunch();					// StartGame(), once the rom scan is stopped
+void UiGameStarted();
 
 // ui_paths.cpp
 void UiRomPathsOpen();
@@ -64,7 +74,8 @@ void UiSupportPathsOpen();
 void UiPathsDraw();
 
 // ui_filebrowser.cpp, a modal popup drawn inside the caller's window or popup
-void UiFileBrowserOpen(const char* pszPopup, const char* pszStart, bool bFolders, const char* pszExtensions);
+enum { UI_BROWSE_FOLDER, UI_BROWSE_OPEN, UI_BROWSE_SAVE };
+void UiFileBrowserOpen(const char* pszPopup, const char* pszStart, int nMode, const char* pszExtensions);	// ".fs;.fr" or NULL
 bool UiFileBrowserDraw(const char* pszPopup, char* pszResult, int nSize);	// true once something is picked
 
 // ui_image.cpp
