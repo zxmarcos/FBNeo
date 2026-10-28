@@ -190,7 +190,7 @@ static int RomDescribe(StringSet* pss, struct BurnRomInfo* pri)
 	{
 		nBzipError |= 0x8000;
 
-		pss->Add(_T("Invalid zip..."));
+		pss->Add(_T("Invalid zip...\n"));
 	}
 	pss->Add(_T("The "));
 	if (pri->nType & BRF_ESS)
@@ -530,7 +530,7 @@ int BzipOpen(bool bootApp)
 
 		if (!bootApp && !bFound)
 		{
-			BzipText.Add(_T("Not found %s;\n"), szBzipName[z]);
+			BzipText.Add(_T("Not found %hs;\n"), szName);	// szBzipName[z] is only set when found
 		}
 	}
 
