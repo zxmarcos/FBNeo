@@ -26,6 +26,16 @@ Assuming you have a working GCC (Mingw and GCC under ubuntu 18.04 have been test
 
 and out will pop an fbneo executable.
 
+### SDL2 on Windows with MSVC (meson)
+
+The meson build only needs Python (the code generators in `src/dep/scripts/*.py`), no perl.
+
+* Install Visual Studio 2022 (C++ workload) and `pip install meson ninja`
+* Get the SDL2 and SDL2_image `-devel-*-VC.zip` packages from https://github.com/libsdl-org and write `sdl2.pc` / `SDL2_image.pc` files pointing at them (`Cflags: -I<sdl>/include`, `Libs: -L<sdl>/lib/x64 -lSDL2main -lSDL2 -lshell32`, and `-lSDL2_image` for SDL2_image); a `pkg-config`/`pkgconf` executable must be available
+* `meson setup build-sdl -Dfrontend=sdl2 --vsenv --buildtype=release --pkg-config-path=<dir with the .pc files>`
+* `meson compile -C build-sdl`
+* copy `SDL2.dll` and `SDL2_image.dll` next to `build-sdl/fbneo.exe`
+
 ### SDL2 + CRT mode switching
 
 Linux now supports modeswitching for CRT monitors using https://github.com/antonioginer/switchres (which is the switchres code of GroovyMAME extracted by its author as a library for emulators that wish to implement resolution switching). In order to get this to work, you need to:

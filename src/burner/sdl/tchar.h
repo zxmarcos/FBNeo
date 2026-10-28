@@ -1,4 +1,11 @@
 #include <stdint.h>
+
+#ifdef _MSC_VER
+#include <string.h>
+#define strcasecmp     _stricmp
+#define strncasecmp    _strnicmp
+#endif
+
 #ifdef _UNICODE
 //TODO: bah
 #include <wchar.h>
@@ -46,9 +53,11 @@ typedef char   _TCHAR;
 
 #define _tfopen        fopen
 
+#ifndef _MSC_VER
 #define _stricmp       strcasecmp
 #define stricmp        strcasecmp
-#define _strnicmp      strncmp
+#define _strnicmp      strncasecmp
+#endif
 
 // FBA function, change this!
 #define dprintf        printf

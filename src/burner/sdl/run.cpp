@@ -3,7 +3,9 @@
 #ifdef BUILD_SDL2
 #include "sdl2_gui_common.h"
 #endif
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 static unsigned int nDoFPS = 0;
 bool bAltPause = 0;
@@ -118,7 +120,26 @@ void ToggleLayer(unsigned char thisLayer)
 }
 
 
+#ifdef _MSC_VER
+// no gettimeofday() on MSVC, use the SDL performance counter instead
+static Uint64 start;
+
+static void ResetTime(void)
+{
+	start = SDL_GetPerformanceCounter();
+}
+
+unsigned int GetTime(void)
+{
+	return (unsigned int)((SDL_GetPerformanceCounter() - start) * 1000000 / SDL_GetPerformanceFrequency());
+}
+#else
 struct timeval start;
+
+static void ResetTime(void)
+{
+	gettimeofday(&start, NULL);
+}
 
 unsigned int GetTime(void)
 {
@@ -128,6 +149,7 @@ unsigned int GetTime(void)
 	ticks = (now.tv_sec - start.tv_sec) * 1000000 + now.tv_usec - start.tv_usec;
 	return ticks;
 }
+#endif
 
 // With or without sound, run one frame.
 // If bDraw is true, it's the last frame before we are up to date, and so we should draw the screen
@@ -342,7 +364,7 @@ int RunReset()
 
 int RunInit()
 {
-	gettimeofday(&start, NULL);
+	ResetTime();
 	DisplayFPSInit();
 	// Try to run with sound
 	AudSetCallback(RunGetNextSound);

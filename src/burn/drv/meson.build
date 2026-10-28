@@ -107,30 +107,33 @@ endif
 
 burn_drv_cpp_args = burn_drv_defs + common_cpp_warning_args
 
+# Cross-group driver headers stay local; intf/audio, intf/cd and burner
+# headers come from the global include set.
+burn_drv_inc = [
+    'capcom',
+    'cave',
+    'dataeast',
+    'galaxian',
+    'irem',
+    'konami',
+    'neogeo',
+    'psikyo',
+    'sega',
+    'taito',
+    'toaplan',
+    # SNES MSU-1 media backend audio decoders (dr_wav/dr_mp3/dr_flac, stb_vorbis)
+    '../../dep/libs/dr_libs',
+    '../../dep/libs/stb_vorbis',
+]
+if cpp.get_id() == 'msvc'
+    # dirent.h for the SNES MSU-1 backend
+    burn_drv_inc += '../../dep/vc/include'
+endif
+
 burn_drv_lib = static_library(
     'burn_drv',
     burn_drv_sources,
-    # Cross-group driver headers stay local; intf/audio, intf/cd and burner
-    # headers come from the global include set.
-    include_directories: [
-        include_directories(
-            'capcom',
-            'cave',
-            'dataeast',
-            'galaxian',
-            'irem',
-            'konami',
-            'neogeo',
-            'psikyo',
-            'sega',
-            'taito',
-            'toaplan',
-            # SNES MSU-1 media backend audio decoders (dr_wav/dr_mp3/dr_flac, stb_vorbis)
-            '../../dep/libs/dr_libs',
-            '../../dep/libs/stb_vorbis',
-        ),
-        global_inc,
-    ],
+    include_directories: [include_directories(burn_drv_inc), global_inc],
     dependencies: [burn_dep, burn_devices_dep, burn_snd_dep, cpu_dep],
     cpp_args: burn_drv_cpp_args,
 )

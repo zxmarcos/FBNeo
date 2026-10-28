@@ -798,7 +798,7 @@ void RefreshRomList(bool force_rescan)
 
 			// draw a progress bar
 			float x = (i * 100) / nBurnDrvCount;
-			fillRect = (SDL_Rect){ 0, 80, (int)(x * screenpercentage), 70 };
+			fillRect = SDL_Rect{ 0, 80, (int)(x * screenpercentage), 70 };
 
 			SDL_SetRenderDrawColor(sdlRenderer, 0, 0xb3, 0x3b, 0xFF);
 			SDL_RenderFillRect(sdlRenderer, &fillRect);
