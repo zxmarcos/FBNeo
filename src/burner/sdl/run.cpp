@@ -269,8 +269,30 @@ static int RunFrame(int bDraw, int bPause)
 	{
 		nFramesEmulated++;
 		nCurrentFrame++;
-		InputMake(true);
-		CheckSystemMacros();
+		if (nReplayStatus == 2)
+		{
+			InputMake(false);				// the game inputs come from the recording
+			CheckSystemMacros();
+			if (ReplayInput())				// the end of the recording
+			{
+				bAppDoFast = 0;
+#ifdef BUILD_SDL2_IMGUI
+				UiSetPause(true);
+#else
+				bRunPause = 1;
+#endif
+				return 0;
+			}
+		}
+		else
+		{
+			InputMake(true);
+			CheckSystemMacros();
+		}
+		if (nReplayStatus == 1)
+		{
+			RecordInput();					// the inputs to the file
+		}
 	}
 
 	if (bDraw)
@@ -365,6 +387,10 @@ static int RunGetNextSound(int bDraw)
 	// Render frame with sound
 	pBurnSoundOut = nAudNextSound;
 	RunFrame(bDraw, 0);
+	if (WaveLog != NULL && pBurnSoundOut != NULL)				// Audio > Record Sound
+	{
+		fwrite(pBurnSoundOut, 1, nBurnSoundLen << 2, WaveLog);
+	}
 	if (bAppDoStep)
 	{
 		memset(nAudNextSound, 0, nAudSegLen << 2);                // Write silence into the buffer
@@ -471,7 +497,19 @@ int RunInit()
 	AudSoundPlay();
 
 	RunReset();
-	StatedAuto(0);
+	// a recording from power-on starts without the automatic state, or with the NVRAM only
+	if (nRunInitAutoState < 0)
+	{
+		StatedAuto(0);
+	}
+	else if (nRunInitAutoState == 1)
+	{
+		int bOldSaveAll = bDrvSaveAll;
+		bDrvSaveAll = 0;
+		StatedAuto(0);
+		bDrvSaveAll = bOldSaveAll;
+	}
+	nRunInitAutoState = -1;
 	return 0;
 }
 

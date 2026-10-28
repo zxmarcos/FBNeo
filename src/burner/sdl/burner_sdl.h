@@ -213,6 +213,42 @@ const char* IpsActivePatch(INT32 i);			// the path of the dat
 INT32 IpsSaveActivePatches(const char* pszDrvName, const char* pszFullName, const char* const* ppszDats, INT32 nCount);
 char* IpsPatchDesc(const char* pszDat, INT32 nLang);	// the language, else English, else Chinese; UTF-8, free() it
 
+// replay.cpp
+extern INT32 nReplayStatus;						// 1 recording, 2 playing back
+extern UINT32 nStartFrame;
+extern UINT32 nTotalFrames;						// of the playback
+extern bool bReplayReadOnly;					// a state loaded during a playback doesn't turn it into a recording
+extern bool bReplayShowMovement;
+extern bool bReplayFrameCounterDisplay;
+extern INT32 nRunInitAutoState;					// RunInit(): -1 the automatic state, 0 nothing, 1 the NVRAM only
+struct ReplayInfo {
+	bool bValid;
+	char szError[128];
+	bool bFromPowerOn;
+	bool bWithNvram;
+	bool bReadOnlyFile;
+	UINT32 nFrames;
+	UINT32 nUndoCount;
+	UINT32 nFBVersion;
+	char szGame[64];							// the romset of a recording from power-on, else the game of the state
+	char szStateGame[33];
+	char szAuthor[1024];						// UTF-8
+	char szDate[64];
+};
+INT32 ReplayGetInfo(const char* pszFile, ReplayInfo* pInfo);
+INT32 StartRecord(const char* pszFile, const char* pszAuthor, bool bFromPowerOn, bool bWithNvram);
+INT32 StartReplay(const char* pszFile, bool bStartPaused);
+void StopReplay();
+INT32 RecordInput();
+INT32 ReplayInput();
+void ReplayBeforeStateLoad();
+const char* ReplayCurrentFile();
+
+// wave.cpp
+extern FILE* WaveLog;
+INT32 WaveLogStart(const char* pszFile);
+INT32 WaveLogStop();
+
 // support_paths.cpp
 extern TCHAR szAppListsPath[MAX_PATH];
 extern TCHAR szAppDatListsPath[MAX_PATH];

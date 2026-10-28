@@ -94,6 +94,16 @@ int UiIpsActiveCount(int nDrv);				// the patches saved in its config/ips/<game>
 void UiIpsArmLaunch(bool bArm);				// the next game loads with its saved patches
 void UiIpsBeforeLoad();						// StartGame(), nBurnDrvActive set
 
+// ui_record.cpp
+void UiRecordOpen(int nWhat);				// 0 record input, 1 play back input, 2 record sound
+void UiReplayMenu();						// Game > Replay
+void UiWaveMenuItems();						// Audio > Record Sound
+void UiRecordDraw();
+void UiRecordGameStarted();					// a recording or a playback waiting for the game
+void UiRecordGameStopping();				// before RunExit()
+const char* UiRecordStatus();				// "REC 123", "PLAY 12 / 345", "WAV", NULL if none
+void UiRecordDrawMovement(ImDrawList* dl, ImVec2 pos);	// the joysticks of the playback, above pos
+
 // ui_menubar.cpp
 void UiMenuBarDraw();
 float UiMenuBarHeight();					// height reserved for the menu bar, 0 when it floats over the game
