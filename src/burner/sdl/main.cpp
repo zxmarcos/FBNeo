@@ -14,6 +14,9 @@
  * ------------------*/
 
 #include "burner.h"
+#ifdef BUILD_SDL2_IMGUI
+#include "ui.h"
+#endif
 #ifndef _WIN32
 #include <sys/stat.h>
 #endif
@@ -378,6 +381,10 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef BUILD_SDL2
+#ifdef BUILD_SDL2_IMGUI
+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
+	SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+#endif
 #ifdef SDL_WINDOWS
 	char *base_path = SDL_GetBasePath();
 
@@ -469,7 +476,16 @@ int main(int argc, char* argv[])
 	{
 		generateDats();
 	}
-#ifdef BUILD_SDL2
+#ifdef BUILD_SDL2_IMGUI
+	else if (romname == NULL || i < nBurnDrvCount)		// an unknown romname is reported below
+	{
+		UiMain(romname != NULL ? (int)i : -1, usemenu || bAlwaysMenu);
+		if (bSaveconfig)
+		{
+			ConfigAppSave();
+		}
+	}
+#elif defined(BUILD_SDL2)
 	else if (usemenu || bAlwaysMenu)
 	{
 		bool quit = 0;
@@ -559,5 +575,9 @@ int main(int argc, char* argv[])
 
 bool AppProcessKeyboardInput()
 {
+#ifdef BUILD_SDL2_IMGUI
+	return !UiWantsKeyboard();		// the game doesn't see the keys typed in the interface
+#else
 	return true;
+#endif
 }

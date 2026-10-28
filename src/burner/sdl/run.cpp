@@ -170,6 +170,7 @@ static int RunFrame(int bDraw, int bPause)
 	{
 		InputMake(false);
 		VidPaint(0);
+		return 0;			// keep the picture, don't run the driver
 	}
 	else
 	{
@@ -248,6 +249,7 @@ static int RunGetNextSound(int bDraw)
 		else
 		{
 			RunFrame(bDraw, 1);
+			memset(nAudNextSound, 0, nAudSegLen << 2);                                        // Write silence into the buffer
 		}
 
 		bAppDoStep = 0;                                                   // done one step

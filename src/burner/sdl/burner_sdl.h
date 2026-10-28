@@ -79,6 +79,21 @@ int DrvExit();
 int ProgressUpdateBurner(double dProgress, const TCHAR* pszText, bool bAbs);
 int AppError(TCHAR* szText, int bWarning);
 
+#ifdef BUILD_SDL2_IMGUI
+// ui/ui_popup.cpp
+#define PUF_TYPE_ERROR			(1)
+#define PUF_TYPE_WARNING		(2)
+#define PUF_TYPE_INFO			(3)
+#define PUF_TYPE_LOGONLY		(8)
+#define PUF_TEXT_TRANSLATE		(1 << 16)
+#define PUF_TEXT_NO_TRANSLATE	(0)
+#define PUF_TEXT_DEFAULT		(PUF_TEXT_TRANSLATE)
+
+int FBAPopupDisplay(int nFlags);
+int FBAPopupAddText(int nFlags, TCHAR* pszFormat, ...);
+int FBAPopupDestroyText();
+#endif
+
 //run.cpp
 extern int RunMessageLoop();
 extern int RunReset();

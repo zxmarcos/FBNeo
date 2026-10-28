@@ -34,6 +34,16 @@ static int DoLibInit()                  // Do Init of Burn library driver
 
 	BzipOpen(false);
 
+#ifdef BUILD_SDL2_IMGUI
+	// shown with the other loading errors once DrvInit() is done
+	if (BzipStatus() != BZIP_STATUS_OK)
+	{
+		extern StringSet BzipText, BzipDetail;
+		AppError(BzipText.szText, BzipStatus() == BZIP_STATUS_BADDATA);
+		AppError(BzipDetail.szText, BzipStatus() == BZIP_STATUS_BADDATA);
+	}
+#endif
+
 	//ProgressCreate();
 
 	nRet = BurnDrvInit();
@@ -67,6 +77,7 @@ static int DrvLoadRom(unsigned char* Dest, int* pnWrote, int i)
 
 		BurnDrvGetRomName(&pszFilename, i, 0);
 		sprintf(szText, "Error loading %s, requested by %s.\nThe emulation will likely suffer problems.", pszFilename, BurnDrvGetTextA(0));
+		AppError(szText, 0);
 	}
 
 	BzipClose();
@@ -130,6 +141,7 @@ int DrvInit(int nDrvNum, bool bRestore)
 		CDEmuExit();
 
 		_stprintf(szTemp, _T("There was an error starting '%s'.\n"), BurnDrvGetText(DRV_FULLNAME));
+		AppError(szTemp, 0);
 		return 1;
 	}
 
@@ -179,7 +191,8 @@ int DrvExit()
 	return 0;
 }
 
-#ifndef BUILD_MACOS
+// the ImGui interface has its own, in ui/ui_popup.cpp
+#if !defined(BUILD_MACOS) && !defined(BUILD_SDL2_IMGUI)
 
 int ProgressUpdateBurner(double dProgress, const TCHAR* pszText, bool bAbs)
 {

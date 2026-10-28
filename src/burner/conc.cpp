@@ -29,7 +29,7 @@ static bool SkipComma(TCHAR** s)
 
 static void CheatError(TCHAR* pszFilename, INT32 nLineNumber, CheatInfo* pCheat, TCHAR* pszInfo, TCHAR* pszLine)
 {
-#if defined (BUILD_WIN32)
+#if defined (BUILD_WIN32) || defined (BUILD_SDL2_IMGUI)
 	FBAPopupAddText(PUF_TEXT_NO_TRANSLATE, _T("Cheat file %s is malformed.\nPlease remove or repair the file.\n\n"), pszFilename);
 	if (pCheat) {
 		FBAPopupAddText(PUF_TEXT_NO_TRANSLATE, _T("Parse error at line %i, in cheat \"%s\".\n"), nLineNumber, pCheat->szCheatName);
@@ -47,7 +47,7 @@ static void CheatError(TCHAR* pszFilename, INT32 nLineNumber, CheatInfo* pCheat,
 	FBAPopupDisplay(PUF_TYPE_ERROR);
 #endif
 
-#if defined(BUILD_SDL2)
+#if defined(BUILD_SDL2) && !defined (BUILD_SDL2_IMGUI)
 	printf("Cheat file %s is malformed.\nPlease remove or repair the file.\n\n", pszFilename);
 	if (pCheat) {
 		printf("Parse error at line %i, in cheat \"%s\".\n", nLineNumber, pCheat->szCheatName);

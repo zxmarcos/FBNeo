@@ -52,6 +52,9 @@ frontend_defs = ['-DBUILD_' + frontend.to_upper()]
 if frontend == 'win32'
     frontend_defs += ['-DUNICODE', '-D_UNICODE']
 endif
+if frontend == 'sdl2' and get_option('sdl_gui') == 'imgui'
+    frontend_defs += ['-DBUILD_SDL2_IMGUI']
+endif
 
 # Warning flags shared by the cpu and burn_drv static libraries (identical set).
 common_cpp_warning_args = []

@@ -83,6 +83,15 @@ depobj	+=	un7z.o \
 			Delta.o LzFindOpt.o LzmaDec.o Lzma2Dec.o MtDec.o Ppmd7.o Ppmd7Dec.o Ppmd7aDec.o Sha256.o Sha1Opt.o Sha256Opt.o Threads.o Xxh64.o Xz.o XzCrc64.o XzCrc64Opt.o XzDec.o ZstdDec.o
 endif
 
+# Dear ImGui interface (make INCLUDE_IMGUI=1 sdl2), the legacy menus are used otherwise
+ifdef INCLUDE_IMGUI
+alldir	+= 	burner/sdl/ui dep/libs/imgui dep/libs/imgui/backends
+
+depobj	+=	ui_app.o ui_core.o ui_gamesel.o ui_menubar.o ui_popup.o \
+			\
+			imgui.o imgui_draw.o imgui_tables.o imgui_widgets.o imgui_impl_sdl2.o imgui_impl_sdlrenderer2.o
+endif
+
 autobj += $(depobj)
 
 ifdef	BUILD_X86_ASM
@@ -247,6 +256,10 @@ endif
 
 ifdef INCLUDE_AVI_RECORDING
 	DEF := $(DEF) -DINCLUDE_AVI_RECORDING
+endif
+
+ifdef INCLUDE_IMGUI
+	DEF := $(DEF) -DBUILD_SDL2_IMGUI
 endif
 
 ifdef LSB_FIRST

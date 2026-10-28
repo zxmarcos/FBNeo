@@ -36,6 +36,13 @@ The meson build only needs Python (the code generators in `src/dep/scripts/*.py`
 * `meson compile -C build-sdl`
 * copy `SDL2.dll` and `SDL2_image.dll` next to `build-sdl/fbneo.exe`
 
+### Dear ImGui interface
+
+The meson build uses the new Dear ImGui interface by default (`-Dsdl_gui=imgui`): one window for the game selector and the game, a menu bar, message boxes for the loading errors and a game menu on Tab. `-Dsdl_gui=legacy` builds the old menus.
+With make it is opt-in for now: `make INCLUDE_IMGUI=1 sdl2`.
+
+The DIPs, cheats and input mapping still use the old menus (Game > DIPs, Cheats, Input Mapping...).
+
 ### SDL2 + CRT mode switching
 
 Linux now supports modeswitching for CRT monitors using https://github.com/antonioginer/switchres (which is the switchres code of GroovyMAME extracted by its author as a library for emulators that wish to implement resolution switching). In order to get this to work, you need to:
@@ -100,6 +107,8 @@ recommend command line options:
 The above will give you a nicely scalend game screen and the menu for launching games. 
 
 ## In-game controls
+
+With the ImGui interface: 'TAB' opens the game menu, 'Pause' pauses, F12 ends the game (back to the selector if it was open, quits otherwise), and the menu bar has the rest. The other keys below are the same.
 
 'TAB' - brings up the in game menu (or game PAUSE)
 'F12' - quit game.
