@@ -4,6 +4,9 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+extern SDL_Renderer* sdlRenderer;			// vid_sdl2.cpp
+extern int vsync;							// main.cpp
+
 #define POPUP_MAX 16
 
 struct Popup {
@@ -220,11 +223,9 @@ static void ProgressDraw()
 		return;
 	}
 
-	Uint32 nNow = SDL_GetTicks();
-	if (nNow - nLastDraw < 50) {
+	if (SDL_GetTicks() - nLastDraw < 50) {
 		return;
 	}
-	nLastDraw = nNow;
 
 	SDL_Event e;
 	while (SDL_PollEvent(&e)) {
@@ -247,6 +248,10 @@ static void ProgressDraw()
 	ImGui::End();
 
 	UiPresent(false);
+
+	// counted from the end of the frame, so a slow present can't take
+	// over the loading time
+	nLastDraw = SDL_GetTicks();
 }
 
 static int __cdecl ProgressSetRangeBurn(double dProgressRange)
@@ -298,11 +303,19 @@ void UiProgressStart(const char* pszTitle)
 	snprintf(szProgressTitle, sizeof(szProgressTitle), "%s", pszTitle);
 	szProgressText[0] = '\0';
 	dPosBurner = dPosBurn = dRangeBurn = 0.0;
-	nLastDraw = 0;
+	nLastDraw = SDL_GetTicks() - 50;
 	bProgress = true;
 
 	BurnExtProgressRangeCallback = ProgressSetRangeBurn;
 	BurnExtProgressUpdateCallback = ProgressUpdateBurn;
+
+	// the drivers update the progress hundreds of times (the CPS2
+	// decryption), don't wait for the display each time
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+	if (vsync) {
+		SDL_RenderSetVSync(sdlRenderer, 0);
+	}
+#endif
 
 	ProgressDraw();
 }
@@ -313,4 +326,10 @@ void UiProgressEnd()
 
 	BurnExtProgressRangeCallback = NULL;
 	BurnExtProgressUpdateCallback = NULL;
+
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+	if (vsync) {
+		SDL_RenderSetVSync(sdlRenderer, 1);
+	}
+#endif
 }
