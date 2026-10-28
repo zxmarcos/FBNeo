@@ -33,6 +33,7 @@ void UiSetWindowScale(int nScale);
 void UiShowOverlay(bool bShow);			// the game menu (Tab)
 bool UiOverlayShown();
 void UiTogglePause();
+void UiSetPause(bool bPause);				// Game > Pause
 void UiToggleMute();
 bool UiMuted();
 void UiRefitWindow();						// the size of the game picture changed
@@ -65,6 +66,26 @@ bool VidSDL2GameVertical();
 extern char szAudSDLDriver[32];
 extern char szAudSDLDevice[256];
 
+// ui_misc.cpp
+enum { UI_THEME_DARK, UI_THEME_LIGHT, UI_THEME_CLASSIC, UI_THEME_COUNT };
+extern bool bUiShowModeIndicator;			// FFWD / PAUSE over the game
+extern bool bUiScanAtStart;					// scan the roms at start-up when there's no cache
+extern bool bUiAutoSaveInputs;				// the input mapping of a game is saved when it ends
+extern int nUiTheme;
+void UiApplyTheme();
+void UiMiscMenu();
+void UiHelpMenu();
+void UiMiscDialogsDraw();
+bool UiMiscCapture();						// a window of the menu that takes the input (shot factory)
+void UiSnapshot(int nType);					// 0 screenshot, 1 title, 2 preview of the selector
+void UiShotFactoryOpen();
+void UiPaletteViewerToggle();
+void UiFirstRunCheck();						// the license, once per version
+
+// ui_gameinfo.cpp
+void UiGameInfoOpen(int nDrv);
+void UiGameInfoDraw();
+
 // ui_menubar.cpp
 void UiMenuBarDraw();
 float UiMenuBarHeight();					// height reserved for the menu bar, 0 when it floats over the game
@@ -85,6 +106,9 @@ bool UiGameSelIsOpen();						// open over the running game
 void UiGameSelClose();
 void UiGameSelRescan();
 void UiGameSelStopScan();					// before anything else uses nBurnDrvActive
+void UiGameSelPauseScan();					// the same, and the scan goes on later
+int UiGameSelCheckRoms(int nDrv, char* pszText, int nSize);	// GAMELIST_AV_*, and the text of the problems
+void UiGameSelRefresh();					// the list again (favorites)
 void UiGameSelReloadImages();				// the image paths changed
 void UiGameSelPlay(int nDrv);				// with the MVS slots and the not working confirmation
 
@@ -102,7 +126,8 @@ enum {
 	UI_HK_PAUSE, UI_HK_FFWD, UI_HK_FFWD_TOGGLE, UI_HK_REWIND, UI_HK_GAME_MENU, UI_HK_LOAD_GAME, UI_HK_END_GAME,
 	UI_HK_STATE_LOAD, UI_HK_STATE_SAVE, UI_HK_STATE_PREV, UI_HK_STATE_NEXT, UI_HK_STATE_UNDO, UI_HK_STATE_LOAD_DIALOG, UI_HK_STATE_SAVE_DIALOG,
 	UI_HK_MEMCARD_TOGGLE, UI_HK_MAP_INPUTS, UI_HK_DIPS, UI_HK_CHEATS,
-	UI_HK_FULLSCREEN, UI_HK_TOGGLE_MENU, UI_HK_FPS, UI_HK_SCREENSHOT, UI_HK_MUTE, UI_HK_VOLUME_UP, UI_HK_VOLUME_DOWN,
+	UI_HK_FULLSCREEN, UI_HK_TOGGLE_MENU, UI_HK_FPS, UI_HK_SCREENSHOT, UI_HK_SNAP_TITLE, UI_HK_SNAP_PREVIEW, UI_HK_SHOT_FACTORY, UI_HK_PALETTE,
+	UI_HK_MUTE, UI_HK_VOLUME_UP, UI_HK_VOLUME_DOWN,
 	UI_HK_COUNT
 };
 int UiHotkeyFind(const SDL_KeyboardEvent& key);		// the UI_HK_ action of a key press, -1 if none

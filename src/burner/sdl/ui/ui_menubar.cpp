@@ -6,13 +6,10 @@
 extern bool do_reset_game;					// inp_sdl2.cpp
 extern INT32 AutoFireRateList[6];			// sdl2_gui_ingame.cpp
 extern char AutoFireRateLabels[6][10];
-extern INT32 EnableHiscores;
 extern INT32 nSocd[6];						// burn/devices/joyprocess.cpp
 
 static float fReserved = 0.0f;				// taken from the game area
 static bool bMenusOpen = false;
-static bool bOpenAbout = false;
-static bool bOpenShortcuts = false;
 
 float UiMenuBarHeight()
 {
@@ -95,111 +92,6 @@ static void InputMenu()
 	}
 }
 
-static void MiscMenu()
-{
-	if (ImGui::MenuItem("Show Menu Bar in a Window", NULL, bUiMenuPinned)) {
-		bUiMenuPinned = !bUiMenuPinned;
-	}
-	if (ImGui::MenuItem("Pause while a Menu is Open", NULL, bUiPauseOnMenu)) {
-		bUiPauseOnMenu = !bUiPauseOnMenu;
-	}
-	if (ImGui::MenuItem("Pause when Inactive", NULL, bUiPauseOnFocusLoss)) {
-		bUiPauseOnFocusLoss = !bUiPauseOnFocusLoss;
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("Always Start in the Game Selector", NULL, bAlwaysMenu)) {
-		bAlwaysMenu = !bAlwaysMenu;
-	}
-	if (ImGui::MenuItem("Save High Scores", NULL, EnableHiscores != 0)) {
-		EnableHiscores = !EnableHiscores;
-	}
-	ImGui::Separator();
-	if (ImGui::BeginMenu("Selector Icons")) {
-		if (ImGui::MenuItem("Show Icons", NULL, bEnableIcons)) {
-			bEnableIcons = !bEnableIcons;
-		}
-		ImGui::Separator();
-		static const char* pszSizes[] = { "16 x 16", "24 x 24", "32 x 32" };
-		for (int i = 0; i < 3; i++) {
-			if (ImGui::MenuItem(pszSizes[i], NULL, nIconsSize == i, bEnableIcons)) {
-				nIconsSize = i;
-			}
-		}
-		ImGui::Separator();
-		if (ImGui::MenuItem("Only for the Parents", NULL, bIconsOnlyParents, bEnableIcons && !bIconsByHardwares)) {
-			bIconsOnlyParents = !bIconsOnlyParents;
-		}
-		if (ImGui::MenuItem("By Hardware", NULL, bIconsByHardwares, bEnableIcons)) {
-			bIconsByHardwares = !bIconsByHardwares;
-		}
-		ImGui::EndMenu();
-	}
-	if (ImGui::MenuItem("ROM Paths...")) {
-		UiRomPathsOpen();
-	}
-	if (ImGui::MenuItem("Support Paths...")) {
-		UiSupportPathsOpen();
-	}
-}
-
-static void HelpMenu()
-{
-	if (ImGui::MenuItem("Keyboard Shortcuts...")) {
-		bOpenShortcuts = true;
-	}
-	if (ImGui::MenuItem("About...")) {
-		bOpenAbout = true;
-	}
-}
-
-static void ShortcutsPopup()
-{
-	if (bOpenShortcuts) {
-		ImGui::OpenPopup("Keyboard Shortcuts");
-		bOpenShortcuts = false;
-	}
-
-	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	bool bOpen = true;
-	if (ImGui::BeginPopupModal("Keyboard Shortcuts", &bOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
-		UiHotkeysTable();						// the current keys (Input > Hotkeys)
-		ImGui::TextDisabled("Change them in Input > Hotkeys.");
-		if (ImGui::Button("Close") || UiEscapePressed()) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SetItemDefaultFocus();
-		ImGui::EndPopup();
-	}
-}
-
-static void AboutPopup()
-{
-	if (bOpenAbout) {
-		ImGui::OpenPopup("About");
-		bOpenAbout = false;
-	}
-
-	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	bool bOpen = true;
-	if (ImGui::BeginPopupModal("About", &bOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
-		SDL_version linked;
-		SDL_GetVersion(&linked);
-
-		ImGui::Text(APP_TITLE " v%s", szAppBurnVer);
-		ImGui::Spacing();
-		ImGui::Text("SDL2 frontend, SDL %d.%d.%d, Dear ImGui %s", linked.major, linked.minor, linked.patch, IMGUI_VERSION);
-		ImGui::TextUnformatted("https://github.com/finalburnneo/FBNeo");
-		ImGui::Spacing();
-		ImGui::TextUnformatted("Usage is restricted by the license in src/license.txt");
-		ImGui::Spacing();
-		if (ImGui::Button("Close") || UiEscapePressed()) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SetItemDefaultFocus();
-		ImGui::EndPopup();
-	}
-}
-
 void UiMenuBarDraw()
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -236,19 +128,15 @@ void UiMenuBarDraw()
 			bMenusOpen = true;
 		}
 		if (ImGui::BeginMenu("Misc")) {
-			MiscMenu();
+			UiMiscMenu();				// ui_misc.cpp
 			ImGui::EndMenu();
 			bMenusOpen = true;
 		}
 		if (ImGui::BeginMenu("Help")) {
-			HelpMenu();
+			UiHelpMenu();
 			ImGui::EndMenu();
 			bMenusOpen = true;
 		}
 		ImGui::EndMainMenuBar();
 	}
-
-	// opened out of the menus, so they don't live in the menu's ID scope
-	ShortcutsPopup();
-	AboutPopup();
 }

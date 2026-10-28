@@ -87,8 +87,8 @@ endif
 ifdef INCLUDE_IMGUI
 alldir	+= 	burner/sdl/ui dep/libs/imgui dep/libs/imgui/backends dep/libs/zip
 
-depobj	+=	gamelist_model.o ui_app.o ui_core.o ui_filebrowser.o ui_game.o ui_gamesel.o ui_hotkeys.o ui_image.o ui_input.o ui_menubar.o ui_paths.o ui_popup.o \
-			ui_video.o \
+depobj	+=	gameinfo_text.o gamelist_model.o ui_app.o ui_core.o ui_filebrowser.o ui_game.o ui_gameinfo.o ui_gamesel.o ui_hotkeys.o ui_image.o ui_input.o \
+			ui_menubar.o ui_misc.o ui_paths.o ui_popup.o ui_video.o \
 			\
 			vid_softfx.o 2xpm.o 2xsai.o crt.o ddt3x.o epx.o hq2xs.o hq2xs_16.o xbr.o xbr32.o \
 			\
@@ -146,6 +146,7 @@ cave_sprite_func.h = $(srcdir)dep/generated/cave_sprite_func.h
 psikyo_tile_func.h = $(srcdir)dep/generated/psikyo_tile_func.h
 pgm_sprite.h = $(srcdir)dep/generated/pgm_sprite.h
 build_details.h = $(srcdir)dep/generated/build_details.h
+license_text.h = $(srcdir)dep/generated/license_text.h
 
 allobj	= $(objdir)cpu/m68k/m68kcpu.o $(objdir)cpu/m68k/m68kops.o \
 	  $(foreach file,$(autobj:.o=.c), \
@@ -538,6 +539,15 @@ psikyo_tile.d psikyo_tile.o psikyosprite.d psikyo_sprite.o: $(psikyo_tile_func.h
 
 $(psikyo_tile_func.h):	$(srcdir)dep/scripts/psikyo_tile_func.pl
 	$(srcdir)dep/scripts/psikyo_tile_func.pl -o $(psikyo_tile_func.h)
+
+#
+#	Extra rules for generated header file license_text.h, needed by ui_misc.cpp (INCLUDE_IMGUI)
+#
+
+ui_misc.d ui_misc.o: $(license_text.h)
+
+$(license_text.h):	$(srcdir)license.txt $(srcdir)dep/scripts/license2h.py
+	@python3 $(srcdir)dep/scripts/license2h.py $(srcdir)license.txt -o $(license_text.h)
 
 #
 #	Extra rules for generated header file pgm_sprite.h, needed by pgm_draw.cpp

@@ -517,7 +517,10 @@ void UiGameMenu()
 		ImGui::EndMenu();
 	}
 	if (ImGui::MenuItem("Save Screenshot", UiHotkeyName(UI_HK_SCREENSHOT), false, bRunning)) {
-		MakeScreenShot(0);
+		UiSnapshot(0);
+	}
+	if (ImGui::MenuItem("Game Info...", NULL, false, bRunning)) {
+		UiGameInfoOpen(nBurnDrvActive);
 	}
 	ImGui::Separator();
 

@@ -6,6 +6,8 @@
 extern INT32 nSocd[6];			// burn/devices/joyprocess.cpp
 extern int vsync;				// main.cpp
 extern char videofiltering[3];
+extern INT32 BurnShiftEnabled;	// burn/burn_shift.cpp
+extern bool bBurnGunDrawReticles;	// burn/burn_gun.cpp
 void CmdLineOptionsForSave(bool bSave);
 #endif
 
@@ -49,6 +51,7 @@ void InitSupportPaths()
 	FixAndCreateSupportPath(szAppCabinetsPath, szBaseFolderName);
 	FixAndCreateSupportPath(szAppPCBsPath, szBaseFolderName);
 	FixAndCreateSupportPath(szAppHistoryPath, szBaseFolderName);
+	FixAndCreateSupportPath(szAppCommandPath, szBaseFolderName);
 	FixAndCreateSupportPath(szAppEEPROMPath, szBaseFolderName);
 	FixAndCreateSupportPath(szAppListsPath, szBaseFolderName);
 	FixAndCreateSupportPath(szAppDatListsPath, szBaseFolderName);
@@ -219,6 +222,14 @@ int ConfigAppLoad()
 			if (szValue) snprintf(szAudSDLDevice, sizeof(szAudSDLDevice), "%s", szValue);
 		}
 		VAR(nAudSegCount);
+		// misc
+		VAR(bUiShowModeIndicator);
+		VAR(bUiScanAtStart);
+		VAR(bUiAutoSaveInputs);
+		VAR(nUiTheme);
+		VAR(bBurnUseBlend);
+		VAR(BurnShiftEnabled);
+		VAR(bBurnGunDrawReticles);
 #endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
@@ -270,6 +281,7 @@ int ConfigAppLoad()
 		STR(szAppCabinetsPath);
 		STR(szAppPCBsPath);
 		STR(szAppHistoryPath);
+		STR(szAppCommandPath);
 		STR(szAppEEPROMPath);
 		STR(szAppListsPath);
 		STR(szAppDatListsPath);
@@ -306,7 +318,13 @@ int ConfigAppSave()
 
 	fprintf(f, "\n// The application version this file was saved from\n");
 	// We can't use the macros for this!
+#ifdef BUILD_SDL2_IMGUI
+	// the version of the license accepted on the first run (ui_misc.cpp), the
+	// question comes back if the window was closed without an answer
+	fprintf(f, "nIniVersion 0x%06X", nIniVersion);
+#else
 	fprintf(f, "nIniVersion 0x%06X", nBurnVer);
+#endif
 
 #ifndef BUILD_PI
 	fprintf(f, "\n// video mode 0 = standard SDL. 1 = SDL1 opengl (don't use on SDL2!!!!!!)\n");
@@ -422,6 +440,18 @@ int ConfigAppSave()
 	STR(szAudSDLDevice);
 	fprintf(f, "\n// Frames of sound in the buffer\n");
 	VAR(nAudSegCount);
+	fprintf(f, "\n// If non-zero, show FFWD / PAUSE over the game\n");
+	VAR(bUiShowModeIndicator);
+	fprintf(f, "\n// If non-zero, scan the roms at start-up when there's no list of the available ones\n");
+	VAR(bUiScanAtStart);
+	fprintf(f, "\n// If non-zero, the input mapping of a game is saved when it ends\n");
+	VAR(bUiAutoSaveInputs);
+	fprintf(f, "\n// Interface theme: 0 dark, 1 light, 2 classic\n");
+	VAR(nUiTheme);
+	fprintf(f, "\n// If non-zero, use the alpha blend effects, show the gear-shift indicator and the lightgun reticles of the games that have them\n");
+	VAR(bBurnUseBlend);
+	VAR(BurnShiftEnabled);
+	VAR(bBurnGunDrawReticles);
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);
@@ -503,8 +533,10 @@ int ConfigAppSave()
 	STR(szAppCabinetsPath);
 	fprintf(f, "\n// UNUSED CURRENTLY (include trailing slash)\n");
 	STR(szAppPCBsPath);
-	fprintf(f, "\n// UNUSED CURRENTLY (include trailing slash)\n");
+	fprintf(f, "\n// history.xml path (include trailing slash)\n");
 	STR(szAppHistoryPath);
+	fprintf(f, "\n// command.dat path (include trailing slash)\n");
+	STR(szAppCommandPath);
 	fprintf(f, "\n// UNUSED CURRENTLY (include trailing slash)\n");
 	STR(szAppListsPath);
 	fprintf(f, "\n// UNUSED CURRENTLY (include trailing slash)\n");

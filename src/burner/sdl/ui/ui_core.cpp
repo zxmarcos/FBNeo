@@ -85,6 +85,37 @@ static void MergeTitleFonts(float fSize)
 	}
 }
 
+// The arrows, the circled letters and numbers and the shapes of command.dat (Game Info)
+static void MergeSymbolFont(float fSize)
+{
+	static const ImWchar SymbolRanges[] = { 0x2190, 0x21FF, 0x2460, 0x24FF, 0x25A0, 0x25FF, 0x2600, 0x26FF, 0 };
+
+#ifdef _WIN32
+	char szFont[MAX_PATH];
+	const char* pszWinDir = getenv("WINDIR");
+	snprintf(szFont, sizeof(szFont), "%s\\Fonts\\seguisym.ttf", pszWinDir ? pszWinDir : "C:\\Windows");
+	const char* pszFonts[] = { szFont };
+#else
+	static const char* pszFonts[] = {
+		"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+		"/usr/share/fonts/TTF/DejaVuSans.ttf",
+		"/usr/share/fonts/dejavu/DejaVuSans.ttf",
+		"/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",
+		"/System/Library/Fonts/Apple Symbols.ttf",
+	};
+#endif
+
+	for (unsigned int i = 0; i < sizeof(pszFonts) / sizeof(pszFonts[0]); i++) {
+		if (FileExists(pszFonts[i])) {
+			ImFontConfig cfg;
+			cfg.MergeMode = true;				// the glyphs already there are kept
+			cfg.OversampleH = 1;
+			ImGui::GetIO().Fonts->AddFontFromFileTTF(pszFonts[i], fSize, &cfg, SymbolRanges);
+			break;
+		}
+	}
+}
+
 static void LoadFonts()
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -122,12 +153,13 @@ static void LoadFonts()
 		io.Fonts->AddFontDefault(&cfg);
 	}
 
+	MergeSymbolFont(fSize);
 	MergeTitleFonts(fSize);
 }
 
 static void SetStyle()
 {
-	ImGui::StyleColorsDark();
+	UiApplyTheme();							// the colours, ui_misc.cpp
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.WindowRounding = 4.0f;

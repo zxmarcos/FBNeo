@@ -21,6 +21,7 @@ static const struct { const char* pszName; TCHAR* pszPath; } SupportPaths[] = {
 	{ "Blend tables",		szAppBlendPath },
 	{ "EEPROM / NVRAM",		szAppEEPROMPath },
 	{ "History",			szAppHistoryPath },
+	{ "Commands",			szAppCommandPath },
 	{ "Select screens",		szAppSelectPath },
 	{ "Versus screens",		szAppVersusPath },
 	{ "How to play",		szAppHowtoPath },
