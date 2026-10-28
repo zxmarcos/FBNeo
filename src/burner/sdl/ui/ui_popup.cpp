@@ -190,7 +190,7 @@ void UiPopupsDraw()
 		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - fButton) * 0.5f);
 		bool bClose = ImGui::Button("OK", ImVec2(fButton, 0));
 		ImGui::SetItemDefaultFocus();
-		if (ImGui::IsKeyPressed(ImGuiKey_Escape) || ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)) {
+		if (UiEscapePressed() || ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)) {
 			bClose = true;
 		}
 

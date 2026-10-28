@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
+#include <wchar.h>
 
 extern SDL_Renderer* sdlRenderer;			// vid_sdl2.cpp
 extern int vsync;
@@ -21,6 +22,67 @@ static bool FileExists(const char* pszName)
 		return true;
 	}
 	return false;
+}
+
+// The original titles of the drivers (Japanese, Chinese, Korean) need fonts
+// of the system, only with the characters those titles use
+static void MergeTitleFonts(float fSize)
+{
+	ImFontGlyphRangesBuilder builder;
+	bool bAny = false;
+	for (UINT32 i = 0; i < nBurnDrvCount; i++) {
+		const wchar_t* pszTitles = BurnDrvGetFullNameW(i);
+		// all the titles, each one ends with a '\0'
+		for (const wchar_t* p = pszTitles; p && *p; p += wcslen(p) + 1) {
+			for (const wchar_t* s = p; *s; s++) {
+				UINT32 c = *s;
+				if (c >= 0x100 && c <= 0xFFFF && (c < 0xD800 || c >= 0xE000)) {	// ImWchar is 16 bits
+					builder.AddChar((ImWchar)c);
+					bAny = true;
+				}
+			}
+		}
+	}
+	if (!bAny) {
+		return;
+	}
+
+	static ImVector<ImWchar> Ranges;		// used until the atlas is built
+	builder.BuildRanges(&Ranges);
+
+	// one font per language, the first one found
+#ifdef _WIN32
+	static const char* pszFonts[][3] = {
+		{ "YuGothM.ttc", "meiryo.ttc", "msgothic.ttc" },
+		{ "msyh.ttc", "simsun.ttc", NULL },
+		{ "malgun.ttf", "gulim.ttc", NULL },
+	};
+	const char* pszWinDir = getenv("WINDIR");
+#else
+	static const char* pszFonts[][3] = {
+		{ "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc" },
+		{ "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc", "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc" },
+		{ "/System/Library/Fonts/Hiragino Sans GB.ttc", "/System/Library/Fonts/AppleSDGothicNeo.ttc", NULL },
+	};
+#endif
+
+	for (unsigned int i = 0; i < sizeof(pszFonts) / sizeof(pszFonts[0]); i++) {
+		for (int j = 0; j < 3 && pszFonts[i][j]; j++) {
+			char szFont[MAX_PATH];
+#ifdef _WIN32
+			snprintf(szFont, sizeof(szFont), "%s\\Fonts\\%s", pszWinDir ? pszWinDir : "C:\\Windows", pszFonts[i][j]);
+#else
+			snprintf(szFont, sizeof(szFont), "%s", pszFonts[i][j]);
+#endif
+			if (FileExists(szFont)) {
+				ImFontConfig cfg;
+				cfg.MergeMode = true;			// the glyphs already there are kept
+				cfg.OversampleH = 1;
+				ImGui::GetIO().Fonts->AddFontFromFileTTF(szFont, fSize, &cfg, Ranges.Data);
+				break;
+			}
+		}
+	}
 }
 
 static void LoadFonts()
@@ -50,12 +112,17 @@ static void LoadFonts()
 	}
 #endif
 
-	// latin-1 covers the driver names, the built-in font is the fallback
-	if (szFont[0] == '\0' || io.Fonts->AddFontFromFileTTF(szFont, 16.0f * fUiScale) == NULL) {
+	// latin and its extensions cover the driver names, the built-in font is the fallback
+	static const ImWchar LatinRanges[] = { 0x0020, 0x024F, 0x2000, 0x206F, 0x25A0, 0x25FF, 0 };
+	float fSize = 16.0f * fUiScale;
+	if (szFont[0] == '\0' || io.Fonts->AddFontFromFileTTF(szFont, fSize, NULL, LatinRanges) == NULL) {
 		ImFontConfig cfg;
-		cfg.SizePixels = 13.0f * fUiScale;
+		fSize = 13.0f * fUiScale;
+		cfg.SizePixels = fSize;
 		io.Fonts->AddFontDefault(&cfg);
 	}
+
+	MergeTitleFonts(fSize);
 }
 
 static void SetStyle()
@@ -202,6 +269,18 @@ void UiSetNavigation(bool bEnable)
 	} else {
 		io.ConfigFlags &= ~(ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad);
 	}
+}
+
+// Closing a popup gives the focus back to its parent in the same frame, which
+// would see the same Escape and close too
+bool UiEscapePressed()
+{
+	static int nFrame = -1;
+	if (!ImGui::IsKeyPressed(ImGuiKey_Escape, false) || nFrame == ImGui::GetFrameCount()) {
+		return false;
+	}
+	nFrame = ImGui::GetFrameCount();
+	return true;
 }
 
 static bool IsUtf8(const unsigned char* s)
