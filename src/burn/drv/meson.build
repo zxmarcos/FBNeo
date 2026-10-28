@@ -39,8 +39,8 @@ toa_gp9001_func_h = custom_target(
     'toa_gp9001_func_h',
     output: ['toa_gp9001_func.h', 'toa_gp9001_func_table.h'],
     command: [
-        perl,
-        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'toa_gp9001_func.pl',
+        python,
+        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'toa_gp9001_func.py',
         '-o', meson.current_build_dir() / 'toa_gp9001_func.h',
     ],
 )
@@ -48,8 +48,8 @@ neo_sprite_func_h = custom_target(
     'neo_sprite_func_h',
     output: ['neo_sprite_func.h', 'neo_sprite_func_table.h'],
     command: [
-        perl,
-        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'neo_sprite_func.pl',
+        python,
+        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'neo_sprite_func.py',
         '-o', meson.current_build_dir() / 'neo_sprite_func.h',
     ],
 )
@@ -57,8 +57,8 @@ cave_tile_func_h = custom_target(
     'cave_tile_func_h',
     output: ['cave_tile_func.h', 'cave_tile_func_table.h'],
     command: [
-        perl,
-        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'cave_tile_func.pl',
+        python,
+        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'cave_tile_func.py',
         '-o', meson.current_build_dir() / 'cave_tile_func.h',
     ],
 )
@@ -66,8 +66,8 @@ cave_sprite_func_h = custom_target(
     'cave_sprite_func_h',
     output: ['cave_sprite_func.h', 'cave_sprite_func_table.h'],
     command: [
-        perl,
-        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'cave_sprite_func.pl',
+        python,
+        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'cave_sprite_func.py',
         '-o', meson.current_build_dir() / 'cave_sprite_func.h',
     ],
 )
@@ -75,8 +75,8 @@ psikyo_tile_func_h = custom_target(
     'psikyo_tile_func_h',
     output: ['psikyo_tile_func.h', 'psikyo_tile_func_table.h'],
     command: [
-        perl,
-        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'psikyo_tile_func.pl',
+        python,
+        meson.current_source_dir() / '..' / '..' / 'dep' / 'scripts' / 'psikyo_tile_func.py',
         '-o', meson.current_build_dir() / 'psikyo_tile_func.h',
     ],
 )

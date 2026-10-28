@@ -87,8 +87,8 @@ license_rtf = custom_target(
     input: proj / 'src/license.txt',
     output: 'license.rtf',
     command: [
-        perl,
-        proj / 'src/dep/scripts/license2rtf.pl',
+        python,
+        proj / 'src/dep/scripts/license2rtf.py',
         '@INPUT@',
         '-o', meson.current_build_dir() / 'license.rtf',
     ],
@@ -105,8 +105,8 @@ else
         input: 'app.rc',
         output: 'app_gnuc.rc',
         command: [
-            perl,
-            proj / 'src/dep/scripts/fixrc.pl',
+            python,
+            proj / 'src/dep/scripts/fixrc.py',
             '@INPUT@',
             '-o', meson.current_build_dir() / 'app_gnuc.rc',
         ],
@@ -116,7 +116,7 @@ else
             '../resource/misc.bmp',
             '../resource/splash.bmp',
             'app.rc',
-            proj / 'src/dep/scripts/fixrc.pl',
+            proj / 'src/dep/scripts/fixrc.py',
         ),
         depends: license_rtf,
     )

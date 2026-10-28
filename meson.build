@@ -5,7 +5,7 @@ project(
     default_options: ['c_std=c99', 'cpp_std=c++11'],
 )
 
-perl = find_program('perl', required: true)
+python = import('python').find_installation()
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 
@@ -184,7 +184,7 @@ endforeach
 enabled_components = []
 burn_drivers = {}                 # group -> { 'desc', 'drivers', 'srcs' }
 # d_parent.cpp lives outside the group dirs and is always compiled (see
-# src/burn/drv/meson.build); feed it to gamelist.pl too, otherwise its parent
+# src/burn/drv/meson.build); feed it to gamelist.py too, otherwise its parent
 # drivers are missing from driverlist.h and their clones show up orphaned.
 driver_files_abs = [meson.current_source_dir() / 'src/burn/drv/d_parent.cpp']
 seen_drivers = []                 # for exclusion validation
