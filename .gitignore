@@ -25,3 +25,4 @@ nvram
 config/*
 fbneo.dat
 fbneo_headless.dylib
+__pycache__/

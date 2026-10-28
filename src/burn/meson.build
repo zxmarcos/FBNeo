@@ -24,7 +24,7 @@ burn_sources = [
 burn_inc = ['.']
 
 # driver_files_abs is the explicit list of enabled d_*.cpp files collected by
-# the root meson.build (respecting driver_list + driver_disable). gamelist.pl
+# the root meson.build (respecting driver_list + driver_disable). gamelist.py
 # reads them from a manifest file (-f) rather than as command-line arguments,
 # both to stay under the OS command-line length limit and to avoid any
 # directory globbing.
@@ -40,8 +40,8 @@ driverlist_h = custom_target(
     'driverlist_h',
     output: 'driverlist.h',
     command: [
-        perl,
-        meson.current_source_dir() / '..' / 'dep' / 'scripts' / 'gamelist.pl',
+        python,
+        meson.current_source_dir() / '..' / 'dep' / 'scripts' / 'gamelist.py',
         '-o', '@OUTPUT@',
         '-l', meson.current_build_dir() / 'gamelist.txt',
         '-f', driverlist_manifest,
