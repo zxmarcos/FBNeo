@@ -66,7 +66,7 @@ depobj	+= 	cdlist.o \
 			aud_dsp.o aud_interface.o cd_interface.o cd_chd.o inp_interface.o interface.o lowpass2.o  vid_interface.o \
 			vid_support.o \
 			\
-			inp_sdl2.o aud_sdl.o support_paths.o ips_manager.o scrn.o localise_gamelist.o romdata.o \
+			inp_sdl2.o aud_sdl.o support_paths.o ips_manager.o textfile.o scrn.o localise_gamelist.o romdata.o \
 			cd_img.o config.o main.o run.o stringset.o bzip.o drv.o media.o memcard.o sdl2_gui_ingame.o sdl2_gui_common.o \
 			inpdipsw.o vid_sdl2opengl.o vid_sdl2.o inputbuf.o replay.o sdl2_gui.o sdl2_inprint.o input_sdl2.o stated.o
 
@@ -87,7 +87,7 @@ endif
 ifdef INCLUDE_IMGUI
 alldir	+= 	burner/sdl/ui dep/libs/imgui dep/libs/imgui/backends dep/libs/zip
 
-depobj	+=	gameinfo_text.o gamelist_model.o ui_app.o ui_core.o ui_filebrowser.o ui_game.o ui_gameinfo.o ui_gamesel.o ui_hotkeys.o ui_image.o ui_input.o \
+depobj	+=	gameinfo_text.o gamelist_model.o ui_app.o ui_core.o ui_filebrowser.o ui_game.o ui_gameinfo.o ui_gamesel.o ui_hotkeys.o ui_image.o ui_input.o ui_ips.o \
 			ui_menubar.o ui_misc.o ui_paths.o ui_popup.o ui_video.o \
 			\
 			vid_softfx.o 2xpm.o 2xsai.o crt.o ddt3x.o epx.o hq2xs.o hq2xs_16.o xbr.o xbr32.o \

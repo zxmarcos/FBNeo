@@ -21,6 +21,7 @@ static bool bScrollToSelected = false;
 static bool bFocusList = true;				// gives the keyboard / gamepad navigation to the selected game
 static bool bNeedBuild = true;				// filters, search or availability changed
 static bool bOverGame = false;				// opened over the running game
+static int nIpsDrv = -1;					// the game of bIpsHas / nIpsActive, below
 static int nSortKey = GAMELIST_SORT_NAME;
 static bool bSortDescending = false;
 static signed char* pExpand = NULL;			// per parent: -1 the default of the Win32 selector, 0 closed, 1 open
@@ -239,6 +240,7 @@ int UiGameSelCheckRoms(int nDrv, char* pszText, int nSize)
 void UiGameSelRefresh()
 {
 	bNeedBuild = true;
+	nIpsDrv = -1;							// the patches may have changed
 }
 
 static void ScanPoll()
@@ -546,8 +548,26 @@ static void Select(int nDrv)
 	}
 }
 
+// IPS patches of the selected game, looked up once per selection (nIpsDrv)
+static bool bApplyIps = false;
+static bool bIpsHas = false;
+static int nIpsActive = 0;
+
+static void IpsCheck(int nDrv)
+{
+	if (nDrv == nIpsDrv) {
+		return;
+	}
+	nIpsDrv = nDrv;
+	bIpsHas = nDrv >= 0 && UiIpsHasPatches(nDrv);
+	nIpsActive = bIpsHas ? UiIpsActiveCount(nDrv) : 0;
+}
+
 static void Launch(int nDrv)
 {
+	IpsCheck(nDrv);
+	UiIpsArmLaunch(bApplyIps && nIpsActive > 0);
+
 	bool bWasScanning = Scanning();
 	UiGameSelStopScan();
 	bScanResume = bWasScanning && SDL_AtomicGet(&nScanNext) < (int)nBurnDrvCount;
@@ -601,6 +621,10 @@ static void RowContextMenu(int nDrv)
 		}
 		if (ImGui::MenuItem("Game Info...")) {
 			UiGameInfoOpen(nDrv);
+		}
+		IpsCheck(nDrv);
+		if (ImGui::MenuItem("IPS Patches...", NULL, false, bIpsHas)) {
+			UiIpsOpen(nDrv);
 		}
 #if SDL_VERSION_ATLEAST(2, 0, 14)
 		if (ImGui::MenuItem("View in Arcade Database")) {
@@ -1342,6 +1366,21 @@ void UiGameSelDraw(bool bOverRunningGame)
 
 		ImGui::AlignTextToFramePadding();
 		ImGui::TextDisabled("Showing %d of %d sets [%d Unavailable sets]", nGameListShown, nGameListTotal, nGameListMissing);
+
+		// the patches of the selected game (win32 IDC_SEL_IPSMANAGER / IDC_SEL_APPLYIPS)
+		IpsCheck(nSelected);
+		if (bIpsHas) {
+			ImGui::SameLine(0.0f, style.ItemSpacing.x * 4.0f);
+			if (ImGui::Button("IPS Patches...")) {
+				UiIpsOpen(nSelected);
+			}
+			ImGui::SameLine();
+			ImGui::BeginDisabled(nIpsActive == 0);
+			char szApply[64];
+			snprintf(szApply, sizeof(szApply), "Apply %d patch%s", nIpsActive, nIpsActive == 1 ? "" : "es");
+			ImGui::Checkbox(szApply, &bApplyIps);
+			ImGui::EndDisabled();
+		}
 
 		float fButton = 120.0f * fUiScale;
 		int nButtons = bOverRunningGame ? 3 : 2;

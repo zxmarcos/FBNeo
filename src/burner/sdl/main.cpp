@@ -41,6 +41,8 @@ TCHAR szAppBurnVer[16];
 char videofiltering[3];
 bool gamefound = 0;
 const char* romname = NULL;
+static bool bCmdLineIps = false;		// -ips: the game loads with its IPS patches
+static const char* pszCmdLineIps = NULL;	// -ips a,b: those ones, saved as its patches
 
 extern void InitSupportPaths();
 
@@ -173,6 +175,15 @@ int parseSwitches(int argc, char* argv[])
 		{
 			set_commandline_option_string(videofiltering, "2", 3, CL_FILTER);
 		}
+		else if (strcmp(argv[i], "-ips") == 0)
+		{
+			bCmdLineIps = true;
+			// the list comes after the game name, like in the Windows build
+			if (gamefound && i + 1 < argc && argv[i + 1][0] != '-')
+			{
+				pszCmdLineIps = argv[++i];
+			}
+		}
 		else if (strcmp(argv[i], "-autosave") == 0)
 		{
 			bDrvSaveAll = 1;
@@ -257,8 +268,63 @@ void generateDats()
 }
 
 
+// -ips a,b,"c d": the dats of the folder of the game (nBurnDrvActive) become its patches
+static void CmdLineIpsSave()
+{
+	if (pszCmdLineIps == NULL)
+	{
+		return;
+	}
+
+	char szList[1024];
+	snprintf(szList, sizeof(szList), "%s", pszCmdLineIps);
+	char szDats[32][MAX_PATH];
+	const char* pszDats[32];
+	int nDats = 0;
+
+	for (char* pszName = strtok(szList, ","); pszName && nDats < 32; pszName = strtok(NULL, ","))
+	{
+		while (*pszName == ' ' || *pszName == '"') pszName++;
+		int nLen = strlen(pszName);
+		while (nLen > 0 && (pszName[nLen - 1] == ' ' || pszName[nLen - 1] == '"')) pszName[--nLen] = '\0';
+		if (nLen == 0)
+		{
+			continue;
+		}
+		bool bExt = nLen > 4 && _stricmp(pszName + nLen - 4, ".dat") == 0;
+		snprintf(szDats[nDats], MAX_PATH, "%s%s%s", IpsPatchFolder(BurnDrvGetTextA(DRV_NAME)), pszName, bExt ? "" : ".dat");
+		FILE* fp = fopen(szDats[nDats], "rb");
+		if (fp)
+		{
+			fclose(fp);
+			pszDats[nDats] = szDats[nDats];
+			nDats++;
+		}
+		else
+		{
+			printf("IPS patch not found: %s\n", szDats[nDats]);
+		}
+	}
+
+	if (nDats > 0)
+	{
+		IpsSaveActivePatches(BurnDrvGetTextA(DRV_NAME), BurnDrvGetTextA(DRV_FULLNAME), pszDats, nDats);
+	}
+}
+
 void DoGame(int gameToRun)
 {
+	if (bCmdLineIps)
+	{
+		nBurnDrvActive = gameToRun;
+		CmdLineIpsSave();
+		if (LoadIpsActivePatches() > 0)
+		{
+			bDoIpsPatch = true;
+			IpsPatchInit();
+		}
+	}
+
 	if (!DrvInit(gameToRun, 0))
 	{
 		MediaInit();
@@ -342,7 +408,7 @@ int main(int argc, char* argv[])
 
 	if (!switchesOK || ((romname == NULL) && !usemenu && !bAlwaysMenu && !dat))
 	{
-		printf("Usage: %s [-cd] [-joy] [-menu] [-novsync] [-integerscale] [-windowscale <num>] [-fullscreen] [-dat] [-autosave] [-nearest] [-linear] [-best] <romname>\n", argv[0]);
+		printf("Usage: %s [-cd] [-joy] [-menu] [-novsync] [-integerscale] [-windowscale <num>] [-fullscreen] [-dat] [-autosave] [-nearest] [-linear] [-best] <romname> [-ips [patch1,patch2...]]\n", argv[0]);
 		printf("Note the -menu switch does not require a romname\n");
 		printf("e.g.: %s mslug\n", argv[0]);
 		printf("e.g.: %s -windowscale 1 asteroid\n", argv[0]);
@@ -461,6 +527,12 @@ int main(int argc, char* argv[])
 #ifdef BUILD_SDL2_IMGUI
 	else if (romname == NULL || i < nBurnDrvCount)		// an unknown romname is reported below
 	{
+		if (romname != NULL && bCmdLineIps)
+		{
+			nBurnDrvActive = i;
+			CmdLineIpsSave();
+			UiIpsArmLaunch(true);
+		}
 		UiMain(romname != NULL ? (int)i : -1, usemenu || bAlwaysMenu);
 		if (bSaveconfig)
 		{

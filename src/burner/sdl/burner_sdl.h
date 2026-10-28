@@ -197,6 +197,22 @@ public:
 	~StringSet();
 };
 
+// textfile.cpp
+char* TextFileLoad(const char* pszFile);		// UTF-8 whatever the encoding, free() it; NULL if it can't be read
+char* TextFileNextLine(char** ppszPos);			// the next line, cut in place without the line end; NULL at the end
+
+// ips_manager.cpp
+#define IPS_LANGUAGES 12
+extern const char* IpsLanguageNames[IPS_LANGUAGES];
+extern const char* IpsLanguageCodes[IPS_LANGUAGES];	// [en_US] ... sections of the dats
+extern INT32 nIpsSelectedLanguage;
+const char* IpsPatchFolder(const char* pszDrvName);	// szAppIpsPath<drv>/
+INT32 LoadIpsActivePatches();					// the ones of config/ips/<drv>.ini, for nBurnDrvActive
+INT32 IpsActivePatchCount();
+const char* IpsActivePatch(INT32 i);			// the path of the dat
+INT32 IpsSaveActivePatches(const char* pszDrvName, const char* pszFullName, const char* const* ppszDats, INT32 nCount);
+char* IpsPatchDesc(const char* pszDat, INT32 nLang);	// the language, else English, else Chinese; UTF-8, free() it
+
 // support_paths.cpp
 extern TCHAR szAppListsPath[MAX_PATH];
 extern TCHAR szAppDatListsPath[MAX_PATH];

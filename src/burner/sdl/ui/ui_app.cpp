@@ -181,6 +181,7 @@ static void StartGame(int nDrv)
 	}
 
 	nBurnDrvActive = nDrv;
+	UiIpsBeforeLoad();					// Apply IPS patches of the selector, -ips
 	char szTitle[300];
 	snprintf(szTitle, sizeof(szTitle), "Loading %s...", UiText(BurnDrvGetTextA(DRV_FULLNAME)));
 	UiProgressStart(szTitle);
@@ -193,6 +194,7 @@ static void StartGame(int nDrv)
 	UiProgressEnd();
 
 	if (nRet) {
+		IpsPatchExit();					// DrvInit() can fail before the roms are loaded
 		DrvExit();
 		MediaExit();
 		bMenuMode = true;				// stay on the selector to show the error
@@ -616,6 +618,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 		UiHotkeysDraw();
 		UiPathsDraw();
 		UiGameInfoDraw();
+		UiIpsDraw();
 		UiMiscDialogsDraw();
 		UiPopupsDraw();
 
