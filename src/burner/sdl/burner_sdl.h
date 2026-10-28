@@ -250,6 +250,8 @@ INT32 WaveLogStart(const char* pszFile);
 INT32 WaveLogStop();
 
 // support_paths.cpp
+extern TCHAR szAppCdCoversPath[MAX_PATH];		// the covers of the CD library, ngcd_<name>.png / pcecd_<name>.png
+extern TCHAR szAppCdPreviewsPath[MAX_PATH];
 extern TCHAR szAppListsPath[MAX_PATH];
 extern TCHAR szAppDatListsPath[MAX_PATH];
 extern TCHAR szAppArchivesPath[MAX_PATH];

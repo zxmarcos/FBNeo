@@ -626,6 +626,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 		UiGameInfoDraw();
 		UiIpsDraw();
 		UiRecordDraw();
+		UiCdLibraryDraw();
 		UiMiscDialogsDraw();
 		UiPopupsDraw();
 
@@ -633,6 +634,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 	}
 
 	StopGame();
+	UiCdLibraryExit();
 	UiGameSelExit();
 	UiExit();
 

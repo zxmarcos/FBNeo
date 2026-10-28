@@ -33,6 +33,8 @@ static const struct { const char* pszName; TCHAR* pszPath; } SupportPaths[] = {
 	{ "Control panels",		szAppControlsPath },
 	{ "Cabinets",			szAppCabinetsPath },
 	{ "PCBs",				szAppPCBsPath },
+	{ "CD covers",			szAppCdCoversPath },
+	{ "CD previews",		szAppCdPreviewsPath },
 	{ "Lists (lst)",		szAppListsPath },
 	{ "Lists (dat)",		szAppDatListsPath },
 	{ "Archives",			szAppArchivesPath },

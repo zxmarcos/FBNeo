@@ -126,7 +126,7 @@ static void QuickLoadArchive(const char* pszFile)
 }
 
 // a .cue/.ccd/.chd: Neo Geo CD or PC Engine CD, told by the contents
-static void QuickLoadCD(const char* pszFile)
+void UiGameQuickLoadCD(const char* pszFile)
 {
 	CDListResult result;
 	const char* pszDriver = NULL;
@@ -219,7 +219,7 @@ static void BrowserDone(const char* pszFile)
 			QuickLoadArchive(pszFile);
 			break;
 		case DIALOG_CDIMAGE:
-			QuickLoadCD(pszFile);
+			UiGameQuickLoadCD(pszFile);
 			break;
 		case DIALOG_MEMCARD_CREATE:
 			MemCardEject();
@@ -474,6 +474,9 @@ void UiGameMenu()
 	if (ImGui::BeginMenu("Quick Load")) {
 		QuickLoadMenu();
 		ImGui::EndMenu();
+	}
+	if (ImGui::MenuItem("CD Library...")) {
+		UiCdLibraryOpen();				// ui_cdlib.cpp
 	}
 	if (ImGui::MenuItem("Rescan ROMs", NULL, false, !bRunning)) {
 		UiGameSelRescan();
