@@ -75,7 +75,10 @@ summary(cpu_status, section: 'CPU cores', list_sep: '')
 # its native generator live here.
 # ---------------------------------------------------------------------------
 if enabled_components.contains('m68000')
-    m68kmake = executable('m68kmake', 'm68k/m68kmake.c', native: true)
+    # MSVC 17.14 /O2 drops bit 14 of the masks it builds, and the generator
+    # runs once: no optimization, as in the Visual Studio project
+    m68kmake = executable('m68kmake', 'm68k/m68kmake.c', native: true,
+        override_options: ['optimization=0'])
     m68kops = custom_target(
         'm68kops',
         output: ['m68kops.c', 'm68kops.h'],
