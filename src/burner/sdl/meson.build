@@ -52,8 +52,10 @@ frontend_deps = [
 if get_option('sdl_gui') == 'imgui'
     frontend_sources += files(
         '../gameinfo_text.cpp',
+        'cdlibrary.cpp',
         '../gamelist_model.cpp',
         'ui/ui_app.cpp',
+        'ui/ui_cdlib.cpp',
         'ui/ui_core.cpp',
         'ui/ui_filebrowser.cpp',
         'ui/ui_game.cpp',

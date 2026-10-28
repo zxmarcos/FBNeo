@@ -41,6 +41,7 @@ typedef char   _TCHAR;
 #define _tcsnicmp      strncasecmp
 #define _tcstol        strtol
 #define _tcsrchr       strrchr
+#define _tcscat        strcat
 #define _tcsstr        strstr
 
 #define _totlower(c)   tolower((unsigned char)(c))

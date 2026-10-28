@@ -1,6 +1,15 @@
 #include "burner.h"
 #include "cdlistcache.h"
+#ifdef _WIN32
 #include <io.h>
+#define CDLIBRARY_SEPARATOR _T("\\")
+#else
+// the SDL2 frontend on the other systems
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#define CDLIBRARY_SEPARATOR _T("/")
+#endif
 
 #define CDLIBRARY_SCHEMA_VERSION   (1)
 #define CDLIBRARY_IDENTIFY_VERSION (1)
@@ -189,6 +198,7 @@ INT32 CDLibraryAddEntryCopy(CDLibrary* pLibrary, const CDLibraryEntry* pEntry)
 
 static INT32 CDLibraryGetStamp(const TCHAR* pszPath, CDLibraryFileStamp* pStamp)
 {
+#ifdef _WIN32
 	WIN32_FILE_ATTRIBUTE_DATA Data;
 	if (!pszPath || !pStamp || !GetFileAttributesEx(pszPath, GetFileExInfoStandard, &Data) || (Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return 0;
@@ -198,6 +208,17 @@ static INT32 CDLibraryGetStamp(const TCHAR* pszPath, CDLibraryFileStamp* pStamp)
 	pStamp->nSize      = ((UINT64)Data.nFileSizeHigh << 32                 ) | Data.nFileSizeLow;
 	pStamp->nWriteTime = ((UINT64)Data.ftLastWriteTime.dwHighDateTime << 32) | Data.ftLastWriteTime.dwLowDateTime;
 	return 1;
+#else
+	struct stat st;
+	if (!pszPath || !pStamp || stat(pszPath, &st) || S_ISDIR(st.st_mode))
+		return 0;
+
+	memset(pStamp, 0, sizeof(*pStamp));
+	CDLibraryCopyText(pStamp->szPath, MAX_PATH, pszPath);
+	pStamp->nSize      = (UINT64)st.st_size;
+	pStamp->nWriteTime = (UINT64)st.st_mtime;
+	return 1;
+#endif
 }
 
 static INT32 CDLibraryAddStamp(CDLibraryEntry* pEntry, const TCHAR* pszPath)
@@ -387,7 +408,7 @@ static INT32 CDLibraryCombinePath(TCHAR* pszDest, const TCHAR* pszDirectory, con
 
 	CDLibraryCopyText(pszDest, MAX_PATH, pszDirectory);
 	if (bSeparator)
-		_tcscat(pszDest, _T("\\"));
+		_tcscat(pszDest, CDLIBRARY_SEPARATOR);
 
 	_tcscat(pszDest, pszName);
 	return 1;
@@ -398,6 +419,47 @@ static INT32 CDLibraryEnumerate(const TCHAR* pszDirectory, INT32 bRecursive, CDL
 	if (CDLibraryIsCancelled(pCancelCallback, pUser))
 		return CDLIBRARY_SCAN_CANCELLED;
 
+#ifndef _WIN32
+	DIR* pDir = opendir(pszDirectory);
+	if (!pDir)
+		return CDLIBRARY_SCAN_OK;
+
+	INT32 nStatus = CDLIBRARY_SCAN_OK;
+	struct dirent* pEnt;
+	while ((pEnt = readdir(pDir)) != NULL) {
+		if (CDLibraryIsCancelled(pCancelCallback, pUser)) {
+			nStatus = CDLIBRARY_SCAN_CANCELLED;
+			break;
+		}
+		if (!_tcscmp(pEnt->d_name, _T(".")) || !_tcscmp(pEnt->d_name, _T("..")))
+			continue;
+
+		TCHAR szPath[MAX_PATH];
+		if (!CDLibraryCombinePath(szPath, pszDirectory, pEnt->d_name))
+			continue;
+
+		struct stat st;
+		if (lstat(szPath, &st))
+			continue;
+		if (S_ISDIR(st.st_mode)) {
+			if (bRecursive) {			// not the symbolic links, like the reparse points below
+				nStatus = CDLibraryEnumerate(szPath, bRecursive, pCandidates, pCancelCallback, pProgressCallback, pUser);
+				if (nStatus != CDLIBRARY_SCAN_OK)
+					break;
+			}
+		} else if (IsFileExt(szPath, (TCHAR*)_T(".cue")) || IsFileExt(szPath, (TCHAR*)_T(".ccd")) || IsFileExt(szPath, (TCHAR*)_T(".chd"))) {
+			if (!CDLibraryAddCandidate(pCandidates, szPath)) {
+				nStatus = CDLIBRARY_SCAN_OUT_OF_MEMORY;
+				break;
+			}
+			if (pProgressCallback)
+				pProgressCallback(CDLIBRARY_PHASE_ENUMERATE, pCandidates->nCount, pCandidates->nCount, pUser);
+		}
+	}
+	closedir(pDir);
+
+	return nStatus;
+#else
 	TCHAR szPattern[MAX_PATH];
 	if (!CDLibraryCombinePath(szPattern, pszDirectory, _T("*")))
 		return CDLIBRARY_SCAN_IO_ERROR;
@@ -446,6 +508,7 @@ static INT32 CDLibraryEnumerate(const TCHAR* pszDirectory, INT32 bRecursive, CDL
 		nStatus = CDLIBRARY_SCAN_IO_ERROR;
 
 	return nStatus;
+#endif
 }
 
 static UINT32 CDLibraryCrc32(const UINT8* pData, UINT32 nLength)
@@ -647,6 +710,17 @@ static INT32 CDLibraryDeserializeEntry(CDLibraryReader* pReader, CDLibraryEntry*
 
 static INT32 CDLibraryGetCachePath(TCHAR* pszPath, UINT32 nPathCount)
 {
+#if defined(BUILD_SDL2)
+	// in the config folder of the SDL2 frontend
+#if defined(SDL_WINDOWS)
+	INT32 nLength = _sntprintf(pszPath, nPathCount, _T("config\\fbneo.cdlist.dat"));
+#else
+	char* pszConfig = SDL_GetPrefPath("fbneo", "config");
+	INT32 nLength = _sntprintf(pszPath, nPathCount, _T("%sfbneo.cdlist.dat"), pszConfig ? pszConfig : "");
+	SDL_free(pszConfig);
+#endif
+	return nLength > 0 && (UINT32)nLength < nPathCount;
+#else
 	TCHAR szModule[MAX_PATH];
 	DWORD nLength = GetModuleFileName(NULL, szModule, MAX_PATH);
 	if (!nLength || nLength >= MAX_PATH)
@@ -664,10 +738,28 @@ static INT32 CDLibraryGetCachePath(TCHAR* pszPath, UINT32 nPathCount)
 		return 0;
 
 	return CDLibraryCombinePath(pszPath, szModule, szName) && _tcslen(pszPath) < nPathCount;
+#endif
 }
 
 static CDLibrary* CDLibraryLoadCache(const TCHAR* pszCachePath, const TCHAR* pszRoot, INT32 bRecursive)
 {
+#ifndef _WIN32
+	FILE* hFile = _tfopen(pszCachePath, _T("rb"));
+	if (!hFile)
+		return NULL;
+
+	fseek(hFile, 0, SEEK_END);
+	long nSize = ftell(hFile);
+	fseek(hFile, 0, SEEK_SET);
+	if (nSize < 40 || nSize > CDLIBRARY_MAX_PAYLOAD + 40) {
+		fclose(hFile);
+		return NULL;
+	}
+	UINT32 nFileLength = (UINT32)nSize;
+	UINT8* pFile = (UINT8*)malloc(nFileLength);
+	INT32  bRead = pFile && fread(pFile, 1, nFileLength, hFile) == nFileLength;
+	fclose(hFile);
+#else
 	HANDLE hFile = CreateFile(pszCachePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 		return NULL;
@@ -682,6 +774,7 @@ static CDLibrary* CDLibraryLoadCache(const TCHAR* pszCachePath, const TCHAR* psz
 	DWORD  nRead = 0;
 	INT32  bRead = pFile && ReadFile(hFile, pFile, nFileLength, &nRead, NULL) && nRead == nFileLength;
 	CloseHandle(hFile);
+#endif
 	if (!bRead) {
 		free_s((void**)&pFile);
 		return NULL;
@@ -757,6 +850,31 @@ static INT32 CDLibrarySaveCache(const TCHAR* pszCachePath, const CDLibrary* pLib
 		return 0;
 	}
 
+#ifndef _WIN32
+	// the folder comes from SDL_GetPrefPath(), it's there; then the file is replaced at once
+	TCHAR szTemp[MAX_PATH];
+	INT32 nTempLength = _sntprintf(szTemp, MAX_PATH, _T("%s.%lu.tmp"), pszCachePath, (unsigned long)getpid());
+	if (nTempLength < 0 || nTempLength >= MAX_PATH) {
+		free_s((void**)&File.pData);
+		return 0;
+	}
+	FILE* pFile = _tfopen(szTemp, _T("wb"));
+	if (!pFile) {
+		free_s((void**)&File.pData);
+		return 0;
+	}
+	INT32 bWritten = fwrite(File.pData, 1, File.nLength, pFile) == File.nLength && fflush(pFile) == 0;
+	if (bWritten)
+		fsync(fileno(pFile));
+	free_s((void**)&File.pData);
+	if (fclose(pFile))
+		bWritten = 0;
+	if (!bWritten || rename(szTemp, pszCachePath)) {
+		remove(szTemp);
+		return 0;
+	}
+	return 1;
+#else
 	TCHAR szDirectory[MAX_PATH];
 	CDLibraryCopyText(szDirectory, MAX_PATH, pszCachePath);
 	TCHAR* pszSeparator = _tcsrchr(szDirectory, _T('\\'));
@@ -789,6 +907,7 @@ static INT32 CDLibrarySaveCache(const TCHAR* pszCachePath, const CDLibrary* pLib
 		return 0;
 	}
 	return 1;
+#endif
 }
 
 static INT32 CDLibraryNormalizeRoot(const TCHAR* pszRoot, TCHAR* pszNormalized)
@@ -796,6 +915,15 @@ static INT32 CDLibraryNormalizeRoot(const TCHAR* pszRoot, TCHAR* pszNormalized)
 	if (!pszRoot || !pszRoot[0] || !pszNormalized)
 		return 0;
 
+#ifndef _WIN32
+	char szFull[PATH_MAX];
+	if (!realpath(pszRoot, szFull) || strlen(szFull) >= MAX_PATH)
+		return 0;
+	_tcscpy(pszNormalized, szFull);
+
+	struct stat st;
+	return stat(pszNormalized, &st) == 0 && S_ISDIR(st.st_mode);
+#else
 	DWORD nLength = GetFullPathName(pszRoot, MAX_PATH, pszNormalized, NULL);
 	if (!nLength || nLength >= MAX_PATH)
 		return 0;
@@ -805,6 +933,7 @@ static INT32 CDLibraryNormalizeRoot(const TCHAR* pszRoot, TCHAR* pszNormalized)
 
 	DWORD nAttributes = GetFileAttributes(pszNormalized);
 	return nAttributes != INVALID_FILE_ATTRIBUTES && (nAttributes & FILE_ATTRIBUTE_DIRECTORY);
+#endif
 }
 
 INT32 CDLibraryScan(const TCHAR* pszRoot, INT32 bRecursive, CDLibraryCancelCallback pCancelCallback, CDLibraryProgressCallback pProgressCallback, void* pUser, CDLibrary** ppLibrary)

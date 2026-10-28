@@ -104,6 +104,13 @@ void UiRecordGameStopping();				// before RunExit()
 const char* UiRecordStatus();				// "REC 123", "PLAY 12 / 345", "WAV", NULL if none
 void UiRecordDrawMovement(ImDrawList* dl, ImVec2 pos);	// the joysticks of the playback, above pos
 
+// ui_cdlib.cpp
+extern char szUiCdLibraryDir[MAX_PATH];		// the folder of the CD images
+extern bool bUiCdLibrarySubdirs;
+void UiCdLibraryOpen();
+void UiCdLibraryDraw();
+void UiCdLibraryExit();
+
 // ui_menubar.cpp
 void UiMenuBarDraw();
 float UiMenuBarHeight();					// height reserved for the menu bar, 0 when it floats over the game
@@ -138,6 +145,7 @@ void UiGameDialogsDraw();
 void UiGameOpenStateDialog(bool bSave);
 void UiGamePrepareLaunch();					// StartGame(), once the rom scan is stopped
 void UiGameStarted();
+void UiGameQuickLoadCD(const char* pszFile);	// Neo Geo CD or PC Engine CD, told by the image
 
 // ui_hotkeys.cpp
 enum {

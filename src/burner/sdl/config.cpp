@@ -230,6 +230,13 @@ int ConfigAppLoad()
 		VAR(bBurnUseBlend);
 		VAR(BurnShiftEnabled);
 		VAR(bBurnGunDrawReticles);
+		STR(szUiCdLibraryDir);
+		VAR(bUiCdLibrarySubdirs);
+		VAR(bReplayReadOnly);
+		VAR(bReplayFrameCounterDisplay);
+		VAR(nIpsSelectedLanguage);
+		STR(szAppCdCoversPath);
+		STR(szAppCdPreviewsPath);
 #endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
@@ -452,6 +459,17 @@ int ConfigAppSave()
 	VAR(bBurnUseBlend);
 	VAR(BurnShiftEnabled);
 	VAR(bBurnGunDrawReticles);
+	fprintf(f, "\n// The folder of the CD library (Neo Geo CD, PC Engine CD), and its subfolders\n");
+	STR(szUiCdLibraryDir);
+	VAR(bUiCdLibrarySubdirs);
+	fprintf(f, "\n// Input playback: read-only, the frame counter over the game\n");
+	VAR(bReplayReadOnly);
+	VAR(bReplayFrameCounterDisplay);
+	fprintf(f, "\n// The language of the IPS patch descriptions (0 English, 1 Simplified Chinese...)\n");
+	VAR(nIpsSelectedLanguage);
+	fprintf(f, "\n// The covers and previews of the CD library (include trailing slash)\n");
+	STR(szAppCdCoversPath);
+	STR(szAppCdPreviewsPath);
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);
