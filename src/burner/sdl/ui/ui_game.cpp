@@ -516,6 +516,10 @@ void UiGameMenu()
 		MemCardMenu();
 		ImGui::EndMenu();
 	}
+	if (ImGui::BeginMenu("Replay")) {
+		UiReplayMenu();					// ui_record.cpp
+		ImGui::EndMenu();
+	}
 	if (ImGui::MenuItem("Save Screenshot", UiHotkeyName(UI_HK_SCREENSHOT), false, bRunning)) {
 		UiSnapshot(0);
 	}

@@ -136,6 +136,7 @@ static void StopGame()
 		return;
 	}
 
+	UiRecordGameStopping();				// the recording files are closed with the game
 	RunExit();
 	bPaused = false;
 	bRunPause = 0;
@@ -220,6 +221,7 @@ static void StartGame(int nDrv)
 	FitWindow();
 	GameInpCheckMouse();
 	UiGameStarted();
+	UiRecordGameStarted();				// Game > Replay from power-on
 }
 
 static void DoRequests()
@@ -517,8 +519,10 @@ static void DrawOsd()
 	float fLine = ImGui::GetTextLineHeightWithSpacing();
 	ImVec2 pos(vp->Pos.x + fPad, vp->Pos.y + UiMenuBarHeight() + fPad);
 
-	const char* pszLines[3];
+	const char* pszLines[4];
 	int nLines = 0;
+	const char* pszRecord = UiRecordStatus();
+	if (pszRecord) pszLines[nLines++] = pszRecord;
 	if (bUiShowModeIndicator) {
 		if (bAppDoFast) pszLines[nLines++] = "FFWD";
 		if (bPaused && !bOverlay) pszLines[nLines++] = "PAUSE";
@@ -533,6 +537,8 @@ static void DrawOsd()
 		dl->AddText(pos, IM_COL32(255, 240, 0, 255), pszLines[i]);
 		pos.y += fLine;
 	}
+
+	UiRecordDrawMovement(dl, ImVec2(vp->Pos.x + fPad, vp->Pos.y + vp->Size.y - fPad));
 
 	if (bAppShowFPS) {
 		char szFps[32];
@@ -619,6 +625,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 		UiPathsDraw();
 		UiGameInfoDraw();
 		UiIpsDraw();
+		UiRecordDraw();
 		UiMiscDialogsDraw();
 		UiPopupsDraw();
 

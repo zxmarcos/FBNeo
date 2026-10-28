@@ -525,4 +525,6 @@ void UiAudioMenu()
 	if (ImGui::MenuItem("4-Point 3rd Order FM Interpolation", NULL, nFMInterpolation == 3)) {
 		nFMInterpolation = 3;
 	}
+	ImGui::Separator();
+	UiWaveMenuItems();					// ui_record.cpp
 }

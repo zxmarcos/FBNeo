@@ -103,6 +103,7 @@ static int LoadState(const TCHAR* pszFile)
 		return 3;
 	}
 
+	ReplayBeforeStateLoad();					// a playback can go on as a recording
 	return BurnStateLoad((TCHAR*)pszFile, 1, NULL);
 }
 

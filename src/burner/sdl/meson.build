@@ -22,6 +22,7 @@ frontend_sources = files(
     'stringset.cpp',
     'support_paths.cpp',
     'textfile.cpp',
+    'wave.cpp',
     '../../intf/audio/sdl/aud_sdl.cpp',
     '../../intf/cd/cd_img.cpp',
     '../../intf/input/sdl/inp_sdl2.cpp',
@@ -66,6 +67,7 @@ if get_option('sdl_gui') == 'imgui'
         'ui/ui_misc.cpp',
         'ui/ui_paths.cpp',
         'ui/ui_popup.cpp',
+        'ui/ui_record.cpp',
         'ui/ui_video.cpp',
         # the software effects of Video > Software Effect
         '../../intf/video/vid_softfx.cpp',
