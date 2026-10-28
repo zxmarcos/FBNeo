@@ -32,6 +32,7 @@ static char szFileName[MAX_PATH] = "";
 static std::vector<BrowserEntry> Entries;
 static int nSelected = -1;
 static bool bFolders = false;
+static bool bSave = false;					// the file may not exist yet, the first extension is added
 static bool bRefresh = true;
 static std::string Extensions;				// ".png;.zip" or empty for all
 
@@ -180,12 +181,13 @@ static void ResultPath(const char* pszPath, char* pszOut, int nSize)
 	snprintf(pszOut, nSize, "%s", pszPath);
 }
 
-void UiFileBrowserOpen(const char* pszPopup, const char* pszStart, bool bPickFolder, const char* pszExtensions)
+void UiFileBrowserOpen(const char* pszPopup, const char* pszStart, int nMode, const char* pszExtensions)
 {
 	char szStart[MAX_PATH];
 	snprintf(szStart, sizeof(szStart), "%s", pszStart ? pszStart : "");
 
-	bFolders = bPickFolder;
+	bFolders = nMode == UI_BROWSE_FOLDER;
+	bSave = nMode == UI_BROWSE_SAVE;
 	Extensions = pszExtensions ? pszExtensions : "";
 	szFileName[0] = '\0';
 
@@ -281,7 +283,7 @@ bool UiFileBrowserDraw(const char* pszPopup, char* pszResult, int nSize)
 	}
 
 	float fButton = 110.0f * fUiScale;
-	if (ImGui::Button(bFolders ? "Use This Folder" : "Open", ImVec2(fButton * (bFolders ? 1.4f : 1.0f), 0.0f)) && (bFolders || szFileName[0])) {
+	if (ImGui::Button(bFolders ? "Use This Folder" : (bSave ? "Save" : "Open"), ImVec2(fButton * (bFolders ? 1.4f : 1.0f), 0.0f)) && (bFolders || szFileName[0])) {
 		bDone = true;
 	}
 	ImGui::SameLine();
@@ -300,6 +302,10 @@ bool UiFileBrowserDraw(const char* pszPopup, char* pszResult, int nSize)
 			}
 		} else {
 			snprintf(szPath, sizeof(szPath), "%s%s", szDir, szFileName);
+			if (bSave && !Extensions.empty() && strchr(szFileName, '.') == NULL) {
+				size_t nEnd = Extensions.find(';');
+				snprintf(szPath + strlen(szPath), sizeof(szPath) - strlen(szPath), "%s", Extensions.substr(0, nEnd).c_str());
+			}
 		}
 		ResultPath(szPath, pszResult, nSize);
 		ImGui::CloseCurrentPopup();

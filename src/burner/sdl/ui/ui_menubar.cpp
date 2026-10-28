@@ -24,42 +24,7 @@ float UiMenuBarHeight()
 
 static void GameMenu()
 {
-	bool bRunning = UiGameRunning();
-
-	if (ImGui::MenuItem(bRunning ? "Load Another Game..." : "Load Game...", NULL, false, bRunning)) {
-		UiGameSelOpen();
-	}
-	if (ImGui::MenuItem("Rescan ROMs", NULL, false, !bRunning)) {
-		UiGameSelRescan();
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("Pause", "Pause", UiGamePaused(), bRunning)) {
-		UiTogglePause();
-	}
-	if (ImGui::MenuItem("Reset", NULL, false, bRunning)) {
-		do_reset_game = true;
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("Quick Load", "F9", false, bRunning)) {
-		QuickState(0);
-	}
-	if (ImGui::MenuItem("Quick Save", "F10", false, bRunning)) {
-		QuickState(1);
-	}
-	if (ImGui::MenuItem("Save Screenshot", "F6", false, bRunning)) {
-		MakeScreenShot(0);
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("DIPs, Cheats, Input Mapping...", NULL, false, bRunning)) {
-		UiOpenLegacyMenu();
-	}
-	ImGui::Separator();
-	if (ImGui::MenuItem("End Game", "F12", false, bRunning)) {
-		UiEndGame();
-	}
-	if (ImGui::MenuItem("Exit")) {
-		UiQuit();
-	}
+	UiGameMenu();					// ui_game.cpp
 }
 
 static void VideoMenu()
@@ -100,6 +65,13 @@ static void VideoMenu()
 		SDL_RenderSetVSync(sdlRenderer, vsync);
 	}
 #endif
+	ImGui::Separator();
+	if (ImGui::MenuItem("Auto Frameskip", NULL, !bAlwaysDrawFrames)) {
+		bAlwaysDrawFrames = !bAlwaysDrawFrames;
+	}
+	if (ImGui::MenuItem("Run-Ahead (one frame less of lag)", NULL, bRunAhead != 0)) {
+		bRunAhead = !bRunAhead;
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem("Show FPS", "F11", bAppShowFPS)) {
 		bAppShowFPS = !bAppShowFPS;
@@ -148,6 +120,25 @@ static void InputMenu()
 	}
 	if (ImGui::MenuItem("Map Game Inputs...", NULL, false, bRunning)) {
 		UiOpenLegacyMenu();
+	}
+	ImGui::Separator();
+	if (ImGui::BeginMenu("Rewind")) {
+		// the buffer is made when the game starts, StateRewindReInit() makes it again
+		if (ImGui::MenuItem("Enable Rewind (hold Page Up)", NULL, bRewindEnabled != 0)) {
+			bRewindEnabled = !bRewindEnabled;
+			if (bRunning) StateRewindReInit();
+		}
+		ImGui::Separator();
+		static const int nSizes[] = { 128, 256, 512, 768, 1024 };
+		for (int i = 0; i < 5; i++) {
+			char szLabel[32];
+			snprintf(szLabel, sizeof(szLabel), nSizes[i] < 1024 ? "%d MB" : "1 GB", nSizes[i]);
+			if (ImGui::MenuItem(szLabel, NULL, nRewindMemory == nSizes[i], bRewindEnabled != 0)) {
+				nRewindMemory = nSizes[i];
+				if (bRunning) StateRewindReInit();
+			}
+		}
+		ImGui::EndMenu();
 	}
 }
 
@@ -221,9 +212,14 @@ static void ShortcutsPopup()
 		static const char* pszKeys[][2] = {
 			{ "Tab",			"Game menu" },
 			{ "Pause",			"Pause" },
-			{ "F1 (hold)",		"Fast forward" },
+			{ "F1 (hold)",		"Fast forward, frame advance when paused" },
+			{ "Shift+F1",		"Fast forward on / off" },
+			{ "Page Up (hold)",	"Rewind (Input > Rewind)" },
 			{ "F6",				"Save screenshot" },
-			{ "F9 / F10",		"Quick load / quick save" },
+			{ "F9 / F10",		"Load / save the state of the active slot" },
+			{ "Ctrl+F9 / F10",	"Load / save a state file" },
+			{ "F8 / F7",		"Previous / next state slot" },
+			{ "Shift+F8",		"Undo the last save of the slot" },
 			{ "F11",			"Show FPS" },
 			{ "F12",			"End the game" },
 			{ "Alt+Enter",		"Fullscreen" },

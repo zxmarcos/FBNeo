@@ -80,7 +80,7 @@ static void Browser(int nBrowse, char (*pszPaths)[MAX_PATH])
 {
 	if (nBrowse >= 0) {
 		nBrowseRow = nBrowse;
-		UiFileBrowserOpen("Choose a folder###browse", pszPaths[nBrowse], true, NULL);
+		UiFileBrowserOpen("Choose a folder###browse", pszPaths[nBrowse], UI_BROWSE_FOLDER, NULL);
 	}
 	if (nBrowseRow >= 0 && UiFileBrowserDraw("Choose a folder###browse", pszPaths[nBrowseRow], MAX_PATH)) {
 		nBrowseRow = -1;

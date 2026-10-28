@@ -146,6 +146,21 @@ int ConfigAppLoad()
 			char *szValue = LabelCheck(szLine, szLabel);
 			if (szValue) snprintf(szSelMvsCarts[i], sizeof(szSelMvsCarts[i]), "%s", szValue);
 		}
+		for (int i = 0; i < 10; i++) {
+			char szLabel[32];
+			snprintf(szLabel, sizeof(szLabel), "szPrevGames[%d] ", i);
+			char *szValue = LabelCheck(szLine, szLabel);
+			if (szValue) snprintf(szPrevGames[i], sizeof(szPrevGames[i]), "%s", szValue);
+		}
+		VAR(nSavestateSlot);
+		VAR(bDrvSaveAll);
+		VAR(bRewindEnabled);
+		{
+			char *szValue = LabelCheck(szLine, "nRewindMemory");
+			if (szValue) nRewindMemory = strtol(szValue, NULL, 0);
+		}
+		VAR(bRunAhead);
+		VAR(bAlwaysDrawFrames);
 #endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
@@ -281,6 +296,21 @@ int ConfigAppSave()
 	for (int i = 0; i < 6; i++) {
 		fprintf(f, "szSelMvsCarts[%d] %s\n", i, szSelMvsCarts[i]);
 	}
+	fprintf(f, "\n// The most recent games\n");
+	for (int i = 0; i < 10; i++) {
+		fprintf(f, "szPrevGames[%d] %s\n", i, szPrevGames[i]);
+	}
+	fprintf(f, "\n// The active save state slot (1 - 8)\n");
+	VAR(nSavestateSlot);
+	fprintf(f, "\n// If non-zero, the automatic state of a game (saved when it ends) holds everything, not only the NVRAM\n");
+	VAR(bDrvSaveAll);
+	fprintf(f, "\n// Rewind, and the memory it can use in MB\n");
+	VAR(bRewindEnabled);
+	fprintf(f, "nRewindMemory %d\n", (int)nRewindMemory);
+	fprintf(f, "\n// If non-zero, run ahead one frame to take one frame of lag away\n");
+	VAR(bRunAhead);
+	fprintf(f, "\n// If zero, frames are skipped when the emulation is too slow\n");
+	VAR(bAlwaysDrawFrames);
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);

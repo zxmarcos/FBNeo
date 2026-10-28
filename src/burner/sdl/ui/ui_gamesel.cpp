@@ -1327,6 +1327,18 @@ void UiGameSelDraw(bool bOverRunningGame)
 	}
 }
 
+// Play from elsewhere (recent games, quick load): with a game running the
+// selector opens over it, for the cartridge slots or the confirmation
+void UiGameSelPlay(int nDrv)
+{
+	if (UiGameRunning()) {
+		bOverGame = true;
+		nSelected = nDrv;
+		bScrollToSelected = true;
+	}
+	TryLaunch(nDrv);
+}
+
 bool UiGameSelIsOpen()
 {
 	return bOverGame;
