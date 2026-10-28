@@ -41,7 +41,7 @@ The meson build only needs Python (the code generators in `src/dep/scripts/*.py`
 The meson build uses the new Dear ImGui interface by default (`-Dsdl_gui=imgui`): one window for the game selector and the game, a menu bar, message boxes for the loading errors and a game menu on Tab. `-Dsdl_gui=legacy` builds the old menus.
 With make it is opt-in for now: `make INCLUDE_IMGUI=1 sdl2`.
 
-The DIPs, cheats and input mapping still use the old menus (Game > DIPs, Cheats, Input Mapping...).
+Input menu: map the game inputs (F5: keyboard, gamepads and mouse, presets, macros with auto-fire), DIP switches (Ctrl+F5), cheats (Shift+F5), auto-fire rate, SOCD per player, rewind and the hotkeys editor (Input > Hotkeys, with a "Windows Layout" button for the keys of the Windows build).
 
 The game selector has the filters of the Windows build (board type, family, genre, hardware, favorites), the parent/clone tree, the title and preview images (`support/titles`, `support/previews` or their `titles.zip`/`previews.zip`), the driver icons (Misc > Selector Icons, from `support/icons` or `icons.zip`) and the Neo Geo MVS cartridge slots (play "Neo Geo MVS system"). The ROM and support paths are set in Misc > ROM Paths and Misc > Support Paths. The favorites are kept in `favorites.dat` of the config folder, in the format of the Windows build.
 
