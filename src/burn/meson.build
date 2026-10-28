@@ -2,6 +2,7 @@ burn_sources = [
     'burn.cpp',
     'burn_bitmap.cpp',
     'burn_gun.cpp',
+    'burn_hdd.cpp',
     'burn_led.cpp',
     'burn_memory.cpp',
     'burn_pal.cpp',
@@ -76,6 +77,7 @@ burn_lib = static_library(
     'burn',
     burn_sources,
     include_directories: [include_directories(burn_inc), global_inc],
+    dependencies: libchdr_dep,
     c_args: burn_c_args,
     cpp_args: burn_cpp_args,
 )
