@@ -1,5 +1,5 @@
 // Misc and Help menus: the options, the dat files, the snapshots, the shot
-// factory, the cheat search, the palette viewer, the themes, the About box,
+// factory, the cheat search, the palette viewer, the About box,
 // the system information and the license on the first run
 #include "burner.h"
 #include "version.h"
@@ -33,15 +33,6 @@ static bool bPaletteViewer = false;
 bool UiMiscCapture()
 {
 	return bShotFactory;
-}
-
-void UiApplyTheme()
-{
-	switch (nUiTheme) {
-		case UI_THEME_LIGHT:	ImGui::StyleColorsLight(); break;
-		case UI_THEME_CLASSIC:	ImGui::StyleColorsClassic(); break;
-		default:				ImGui::StyleColorsDark(); break;
-	}
 }
 
 static void OpenUrl(const char* pszUrl)
@@ -218,11 +209,14 @@ void UiMiscMenu()
 	}
 	ImGui::Separator();
 	if (ImGui::BeginMenu("Interface Theme")) {
-		static const char* pszThemes[UI_THEME_COUNT] = { "Dark", "Light", "Classic" };
-		for (int i = 0; i < UI_THEME_COUNT; i++) {
-			if (ImGui::MenuItem(pszThemes[i], NULL, nUiTheme == i)) {
+		for (int i = 0; i < UiThemeCount(); i++) {
+			if (i == UI_THEME_CLASSIC + 1) {
+				ImGui::Separator();
+			}
+			if (ImGui::MenuItem(UiThemeName(i), NULL, nUiTheme == i)) {
 				nUiTheme = i;
 				UiApplyTheme();
+				UiRefitWindow();				// the height of the menu bar
 			}
 		}
 		ImGui::EndMenu();

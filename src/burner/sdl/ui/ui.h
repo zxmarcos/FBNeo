@@ -67,16 +67,20 @@ extern char szAudSDLDriver[32];
 extern char szAudSDLDevice[256];
 
 // ui_misc.cpp
-enum { UI_THEME_DARK, UI_THEME_LIGHT, UI_THEME_CLASSIC, UI_THEME_COUNT };
 extern bool bUiShowModeIndicator;			// FFWD / PAUSE over the game
 extern bool bUiScanAtStart;					// scan the roms at start-up when there's no cache
 extern bool bUiAutoSaveInputs;				// the input mapping of a game is saved when it ends
 extern int nUiTheme;
-void UiApplyTheme();
 void UiMiscMenu();
 void UiHelpMenu();
 void UiMiscDialogsDraw();
 bool UiMiscCapture();						// a window of the menu that takes the input (shot factory)
+
+// ui_themes.cpp
+enum { UI_THEME_DARK, UI_THEME_LIGHT, UI_THEME_CLASSIC };	// the ones of Dear ImGui, then the others
+int UiThemeCount();
+const char* UiThemeName(int nTheme);
+void UiApplyTheme();						// nUiTheme, the colours and the sizes
 void UiSnapshot(int nType);					// 0 screenshot, 1 title, 2 preview of the selector
 void UiShotFactoryOpen();
 void UiPaletteViewerToggle();
