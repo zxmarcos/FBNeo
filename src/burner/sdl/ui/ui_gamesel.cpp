@@ -626,6 +626,9 @@ static void RowContextMenu(int nDrv)
 		if (ImGui::MenuItem("IPS Patches...", NULL, false, bIpsHas)) {
 			UiIpsOpen(nDrv);
 		}
+		if (ImGui::MenuItem("Export RomData Template...")) {
+			UiRomDataExportOpen(nDrv);
+		}
 #if SDL_VERSION_ATLEAST(2, 0, 14)
 		if (ImGui::MenuItem("View in Arcade Database")) {
 			OpenArcadeDatabase(nDrv);

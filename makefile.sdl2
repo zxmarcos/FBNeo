@@ -88,7 +88,7 @@ ifdef INCLUDE_IMGUI
 alldir	+= 	burner/sdl/ui dep/libs/imgui dep/libs/imgui/backends dep/libs/zip
 
 depobj	+=	cdlibrary.o gameinfo_text.o gamelist_model.o ui_app.o ui_cdlib.o ui_core.o ui_filebrowser.o ui_game.o ui_gameinfo.o ui_gamesel.o ui_hotkeys.o ui_image.o ui_input.o ui_ips.o \
-			ui_menubar.o ui_misc.o ui_paths.o ui_popup.o ui_record.o ui_video.o \
+			ui_menubar.o ui_misc.o ui_paths.o ui_popup.o ui_record.o ui_romdata.o ui_video.o \
 			\
 			vid_softfx.o 2xpm.o 2xsai.o crt.o ddt3x.o epx.o hq2xs.o hq2xs_16.o xbr.o xbr32.o \
 			\

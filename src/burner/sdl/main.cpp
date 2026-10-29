@@ -43,6 +43,7 @@ bool gamefound = 0;
 const char* romname = NULL;
 static bool bCmdLineIps = false;		// -ips: the game loads with its IPS patches
 static const char* pszCmdLineIps = NULL;	// -ips a,b: those ones, saved as its patches
+static const char* pszCmdLineRomData = NULL;	// -romdata <dat>: the game of a RomData dat
 
 extern void InitSupportPaths();
 
@@ -183,6 +184,15 @@ int parseSwitches(int argc, char* argv[])
 			{
 				pszCmdLineIps = argv[++i];
 			}
+		}
+		else if (strcmp(argv[i], "-romdata") == 0)
+		{
+			if (++i >= argc)
+			{
+				return 1;
+			}
+			pszCmdLineRomData = argv[i];
+			gamefound = 1;					// the dat names the game
 		}
 		else if (strcmp(argv[i], "-autosave") == 0)
 		{
@@ -406,9 +416,9 @@ int main(int argc, char* argv[])
 	nAudDSPModule[0] = 0;
 	EnableHiscores = 1;
 
-	if (!switchesOK || ((romname == NULL) && !usemenu && !bAlwaysMenu && !dat))
+	if (!switchesOK || ((romname == NULL) && !usemenu && !bAlwaysMenu && !dat && !pszCmdLineRomData))
 	{
-		printf("Usage: %s [-cd] [-joy] [-menu] [-novsync] [-integerscale] [-windowscale <num>] [-fullscreen] [-dat] [-autosave] [-nearest] [-linear] [-best] <romname> [-ips [patch1,patch2...]]\n", argv[0]);
+		printf("Usage: %s [-cd] [-joy] [-menu] [-novsync] [-integerscale] [-windowscale <num>] [-fullscreen] [-dat] [-autosave] [-nearest] [-linear] [-best] <romname> [-ips [patch1,patch2...]] [-romdata <dat>]\n", argv[0]);
 		printf("Note the -menu switch does not require a romname\n");
 		printf("e.g.: %s mslug\n", argv[0]);
 		printf("e.g.: %s -windowscale 1 asteroid\n", argv[0]);
@@ -525,6 +535,20 @@ int main(int argc, char* argv[])
 		generateDats();
 	}
 #ifdef BUILD_SDL2_IMGUI
+	else if (pszCmdLineRomData)
+	{
+		// the game of the dat, as if it was given by its name
+		if (!UiRomDataPlay(pszCmdLineRomData))
+		{
+			printf("%s can't be used as a RomData dat.\n", pszCmdLineRomData);
+			return 1;
+		}
+		UiMain(nBurnDrvActive, usemenu || bAlwaysMenu);
+		if (bSaveconfig)
+		{
+			ConfigAppSave();
+		}
+	}
 	else if (romname == NULL || i < nBurnDrvCount)		// an unknown romname is reported below
 	{
 		if (romname != NULL && bCmdLineIps)

@@ -488,15 +488,23 @@ int BzipOpen(bool bootApp)
 		}
 	}
 
+	// RomData mode: the archive of the driver too, for the roms the dat doesn't have
+	const char* pszDrvName = (NULL != pDataRomDesc && pRDI->szDrvName[0]) ? pRDI->szDrvName : NULL;
+
 	// Locate each zip file
-	for (int y = 0, z = 0; y < BZIP_MAX && z < BZIP_MAX; y++)
+	for (int y = 0, z = 0; y <= BZIP_MAX && z < BZIP_MAX; y++)
 	{
 		char* szName = NULL;
 		bool  bFound = false;
 
-		if (BurnDrvGetZipName(&szName, y))
+		if (y == BZIP_MAX || BurnDrvGetZipName(&szName, y))
 		{
-			break;
+			if (pszDrvName == NULL)
+			{
+				break;
+			}
+			szName = (char*)pszDrvName;		// after the archives of the dat
+			pszDrvName = NULL;
 		}
 
 		for (int d = -1; d < DIRS_MAX; d++) // The folder of a quick load first, then the user-configured rom paths
