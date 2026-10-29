@@ -157,20 +157,6 @@ static void LoadFonts()
 	MergeTitleFonts(fSize);
 }
 
-static void SetStyle()
-{
-	UiApplyTheme();							// the colours, ui_misc.cpp
-
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.WindowRounding = 4.0f;
-	style.FrameRounding = 3.0f;
-	style.PopupRounding = 3.0f;
-	style.GrabRounding = 3.0f;
-	style.ScrollbarRounding = 3.0f;
-	style.WindowBorderSize = 1.0f;
-	style.ScaleAllSizes(fUiScale);
-}
-
 int UiInit()
 {
 	float fDpi = 0.0f;
@@ -221,7 +207,7 @@ int UiInit()
 #endif
 	io.IniFilename = szImGuiIni;
 
-	SetStyle();
+	UiApplyTheme();							// ui_themes.cpp
 	LoadFonts();
 
 	ImGui_ImplSDL2_InitForSDLRenderer(sdlWindow, sdlRenderer);
