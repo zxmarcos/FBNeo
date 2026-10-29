@@ -24,6 +24,7 @@ TCHAR szAppPCBsPath[MAX_PATH]		= _T("support/pcbs/");
 TCHAR szAppHistoryPath[MAX_PATH]	= _T("support/history/");
 TCHAR szAppCommandPath[MAX_PATH]	= _T("support/commands/");
 TCHAR szAppCdCoversPath[MAX_PATH]	= _T("support/cdcovers/");
+TCHAR szAppRomdataPath[MAX_PATH]	= _T("support/romdata/");
 TCHAR szAppCdPreviewsPath[MAX_PATH]	= _T("support/cdpreviews/");
 TCHAR szAppEEPROMPath[MAX_PATH]		= _T("config/games/");
 TCHAR szAppListsPath[MAX_PATH] 		= _T("support/lists/lst/");

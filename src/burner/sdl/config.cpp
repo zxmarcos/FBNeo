@@ -237,6 +237,8 @@ int ConfigAppLoad()
 		VAR(nIpsSelectedLanguage);
 		STR(szAppCdCoversPath);
 		STR(szAppCdPreviewsPath);
+		VAR(bUiRomDataSubdirs);
+		STR(szAppRomdataPath);
 #endif
 		VAR(bVidScanlines);
 		VAR(bDoGamma);
@@ -470,6 +472,9 @@ int ConfigAppSave()
 	fprintf(f, "\n// The covers and previews of the CD library (include trailing slash)\n");
 	STR(szAppCdCoversPath);
 	STR(szAppCdPreviewsPath);
+	fprintf(f, "\n// The RomData dats (include trailing slash), and their subfolders\n");
+	STR(szAppRomdataPath);
+	VAR(bUiRomDataSubdirs);
 #endif
 	fprintf(f, "\n// If non-zero, enable scanlines\n");
 	VAR(bVidScanlines);

@@ -70,6 +70,7 @@ if get_option('sdl_gui') == 'imgui'
         'ui/ui_paths.cpp',
         'ui/ui_popup.cpp',
         'ui/ui_record.cpp',
+        'ui/ui_romdata.cpp',
         'ui/ui_video.cpp',
         # the software effects of Video > Software Effect
         '../../intf/video/vid_softfx.cpp',

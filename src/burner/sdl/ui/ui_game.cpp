@@ -478,6 +478,9 @@ void UiGameMenu()
 	if (ImGui::MenuItem("CD Library...")) {
 		UiCdLibraryOpen();				// ui_cdlib.cpp
 	}
+	if (ImGui::MenuItem("RomData Manager...")) {
+		UiRomDataOpen();				// ui_romdata.cpp
+	}
 	if (ImGui::MenuItem("Rescan ROMs", NULL, false, !bRunning)) {
 		UiGameSelRescan();
 	}

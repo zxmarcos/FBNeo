@@ -66,7 +66,8 @@ static void SetTitle()
 {
 	char szTitle[512];
 	if (bGameRunning) {
-		snprintf(szTitle, sizeof(szTitle), APP_TITLE " - %s", UiText(BurnDrvGetTextA(DRV_FULLNAME)));
+		// a RomData dat names its own game
+		snprintf(szTitle, sizeof(szTitle), APP_TITLE " - %s", szRomDataTitle[0] ? szRomDataTitle : UiText(BurnDrvGetTextA(DRV_FULLNAME)));
 	} else {
 		snprintf(szTitle, sizeof(szTitle), APP_TITLE " v%s", szAppBurnVer);
 	}
@@ -181,6 +182,7 @@ static void StartGame(int nDrv)
 		return;
 	}
 
+	UiRomDataPrepareLaunch();			// szRomdataName, for DrvInit()
 	nBurnDrvActive = nDrv;
 	UiIpsBeforeLoad();					// Apply IPS patches of the selector, -ips
 	char szTitle[300];
@@ -627,6 +629,7 @@ int UiMain(int nDrvSelect, bool bMenu)
 		UiIpsDraw();
 		UiRecordDraw();
 		UiCdLibraryDraw();
+		UiRomDataDraw();
 		UiMiscDialogsDraw();
 		UiPopupsDraw();
 

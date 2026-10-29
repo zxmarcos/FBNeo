@@ -111,6 +111,14 @@ void UiCdLibraryOpen();
 void UiCdLibraryDraw();
 void UiCdLibraryExit();
 
+// ui_romdata.cpp
+extern bool bUiRomDataSubdirs;				// the dats of the subfolders of szAppRomdataPath too
+void UiRomDataOpen();						// the manager
+void UiRomDataExportOpen(int nDrv);			// a template dat with the roms of a driver
+void UiRomDataDraw();
+bool UiRomDataPlay(const char* pszDat);		// false (and an AppError()) if the dat can't be used
+void UiRomDataPrepareLaunch();				// StartGame(), once the previous game is over
+
 // ui_menubar.cpp
 void UiMenuBarDraw();
 float UiMenuBarHeight();					// height reserved for the menu bar, 0 when it floats over the game

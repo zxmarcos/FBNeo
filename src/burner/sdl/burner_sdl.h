@@ -244,6 +244,21 @@ INT32 ReplayInput();
 void ReplayBeforeStateLoad();
 const char* ReplayCurrentFile();
 
+// romdata.cpp
+extern char szRomDataTitle[MAX_PATH * 3];		// the FullName of the dat in use (szRomdataName), UTF-8
+struct RomDataListInfo {
+	char szDat[MAX_PATH];
+	char szZipName[100];
+	char szDrvName[100];
+	char szFullName[MAX_PATH * 3];
+	char szHardware[256];
+	INT32 nDrv;
+};
+INT32 RomDataCheck(const TCHAR* pszDatFile);	// the driver of the dat, < 0 with an AppError() if it can't be used
+INT32 RomDataGetListInfo(const TCHAR* pszDatFile, RomDataListInfo* pInfo);
+INT32 RomDataExportTemplate(INT32 nDrv, const TCHAR* pszFile);
+TCHAR* RomdataGetZipName(const TCHAR* pszFileName);
+
 // wave.cpp
 extern FILE* WaveLog;
 INT32 WaveLogStart(const char* pszFile);

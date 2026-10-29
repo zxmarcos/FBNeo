@@ -67,11 +67,13 @@ static int DoLibInit()                  // Do Init of Burn library driver
 {
 	int nRet;
 
+	RomDataInit();                          // the roms of szRomdataName, if a RomData dat is used
 	DrvBzipOpen();
 
 	//ProgressCreate();
 
 	nRet = BurnDrvInit();
+	RomDataSetFullName();
 
 	BzipClose();
 
@@ -233,6 +235,7 @@ int DrvExit()
 //	nBurnDrvActive = ~0U;                 // no driver selected
 
 	CDEmuExit();
+	RomDataExit();                          // the driver gets its own roms and zip name back
 
 	return 0;
 }

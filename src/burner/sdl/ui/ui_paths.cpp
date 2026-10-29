@@ -18,6 +18,7 @@ static const struct { const char* pszName; TCHAR* pszPath; } SupportPaths[] = {
 	{ "Samples",			szAppSamplesPath },
 	{ "HDD images",			szAppHDDPath },
 	{ "IPS patches",		szAppIpsPath },
+	{ "RomData dats",		szAppRomdataPath },
 	{ "Blend tables",		szAppBlendPath },
 	{ "EEPROM / NVRAM",		szAppEEPROMPath },
 	{ "History",			szAppHistoryPath },
