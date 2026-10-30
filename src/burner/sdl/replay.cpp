@@ -22,9 +22,10 @@ bool   bReplayShowMovement = false;
 bool   bReplayFrameCounterDisplay = true;
 INT32  nRunInitAutoState = -1;				// run.cpp RunInit(): -1 the automatic state, 0 nothing, 1 the NVRAM only
 
-// If a driver has external data that needs to be recorded every frame.
-INT32 nReplayExternalDataCount = 0;
-UINT8 *ReplayExternalData = NULL;
+// If a driver has external data that needs to be recorded every frame
+// (the MSX keyboard rows; d_msx.cpp defines them outside the Win32 build)
+extern INT32 nReplayExternalDataCount;
+extern UINT8 *ReplayExternalData;
 
 extern bool bWithEEPROM;					// state.cpp
 
