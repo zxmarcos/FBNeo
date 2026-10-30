@@ -437,7 +437,9 @@ int main(int argc, char* argv[])
 
 #ifdef BUILD_SDL2
 #ifdef BUILD_SDL2_IMGUI
+#ifdef SDL_HINT_WINDOWS_DPI_AWARENESS		// SDL 2.24
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
+#endif
 	SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 #endif
 #ifdef SDL_WINDOWS
