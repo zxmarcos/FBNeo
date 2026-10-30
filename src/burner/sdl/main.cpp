@@ -416,7 +416,12 @@ int main(int argc, char* argv[])
 	nAudDSPModule[0] = 0;
 	EnableHiscores = 1;
 
+#ifdef BUILD_SDL2_IMGUI
+	// without a game the selector opens: -menu only brings it back when a game given here ends
+	if (!switchesOK)
+#else
 	if (!switchesOK || ((romname == NULL) && !usemenu && !bAlwaysMenu && !dat && !pszCmdLineRomData))
+#endif
 	{
 		printf("Usage: %s [-cd] [-joy] [-menu] [-novsync] [-integerscale] [-windowscale <num>] [-fullscreen] [-dat] [-autosave] [-nearest] [-linear] [-best] <romname> [-ips [patch1,patch2...]] [-romdata <dat>]\n", argv[0]);
 		printf("Note the -menu switch does not require a romname\n");
