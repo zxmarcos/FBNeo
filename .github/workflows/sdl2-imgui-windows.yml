@@ -70,21 +70,30 @@ jobs:
           $env:CC = 'cl'
           $env:CXX = 'cl'
           meson setup build -Dfrontend=sdl2 -Dsdl_gui=imgui --buildtype=release "--pkg-config-path=$env:DEPS\pkgconfig"
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($LASTEXITCODE) { Write-Output "::error::meson setup failed"; exit $LASTEXITCODE }
           meson compile -C build
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($LASTEXITCODE) { Write-Output "::error::meson compile failed"; exit $LASTEXITCODE }
 
       - name: Package
         run: |
-          $pkg = "$env:RUNNER_TEMP\pkg"
-          New-Item -ItemType Directory $pkg | Out-Null
-          Copy-Item build\fbneo.exe $pkg
-          Copy-Item "$env:DEPS\SDL2-$env:SDL2_VERSION\lib\x64\SDL2.dll" $pkg
-          Copy-Item "$env:DEPS\SDL2_image-$env:SDL2_IMAGE_VERSION\lib\x64\SDL2_image.dll" $pkg
-          # the Visual C++ runtime next to the executable, for the machines without the redistributable
-          Copy-Item "$env:VCToolsRedistDir\x64\Microsoft.VC143.CRT\msvcp140.dll", "$env:VCToolsRedistDir\x64\Microsoft.VC143.CRT\vcruntime140.dll", "$env:VCToolsRedistDir\x64\Microsoft.VC143.CRT\vcruntime140_1.dll" $pkg
-          Copy-Item src\license.txt, README-SDL.md $pkg
-          Compress-Archive "$pkg\*" $env:ARCHIVE
+          $ErrorActionPreference = 'Stop'
+          try {
+            $pkg = "$env:RUNNER_TEMP\pkg"
+            New-Item -ItemType Directory $pkg | Out-Null
+            Copy-Item build\fbneo.exe $pkg
+            Copy-Item "$env:DEPS\SDL2-$env:SDL2_VERSION\lib\x64\SDL2.dll" $pkg
+            Copy-Item "$env:DEPS\SDL2_image-$env:SDL2_IMAGE_VERSION\lib\x64\SDL2_image.dll" $pkg
+            # the Visual C++ runtime next to the executable, for the machines without the redistributable
+            $crt = Get-ChildItem "$env:VCToolsRedistDir\x64" -Directory -Filter 'Microsoft.VC*.CRT' | Select-Object -First 1
+            if (-not $crt) { throw "no Microsoft.VC*.CRT in '$env:VCToolsRedistDir\x64'" }
+            Copy-Item "$($crt.FullName)\msvcp140.dll", "$($crt.FullName)\vcruntime140.dll", "$($crt.FullName)\vcruntime140_1.dll" $pkg
+            Copy-Item src\license.txt, README-SDL.md $pkg
+            Compress-Archive "$pkg\*" $env:ARCHIVE
+            Write-Output "::notice::$((Get-ChildItem $pkg | ForEach-Object { "$($_.Name) $($_.Length)" }) -join ', ')"
+          } catch {
+            Write-Output "::error::Package: $($_.Exception.Message)"
+            exit 1
+          }
 
       - name: Upload
         uses: actions/upload-artifact@v4
