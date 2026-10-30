@@ -40,6 +40,7 @@ The meson build only needs Python (the code generators in `src/dep/scripts/*.py`
 
 The meson build uses the new Dear ImGui interface by default (`-Dsdl_gui=imgui`): one window for the game selector and the game, a menu bar, message boxes for the loading errors and a game menu on Tab. `-Dsdl_gui=legacy` builds the old menus.
 With make it is opt-in for now: `make INCLUDE_IMGUI=1 sdl2`.
+Without a game name the game selector opens, there is no need for `-menu` (it only brings the selector back when a game given on the command line ends).
 
 Video menu: fullscreen (desktop, or exclusive with a resolution and a display for the horizontal and the vertical games, auto switch after loading), window size, stretch (normal, full, correct aspect ratio, integer scaling), monitor aspect ratio, rotation of the vertical games, gamma, scanlines, the software effects (Scale2x, hq2xS, xBR, CRT...), filtering and vsync. Audio menu: volume up to 200% and mute, the SDL output driver and device, sample rate, buffer size, low-pass filter and interpolation. Everything is kept in `fbneo.ini`; the video options of the command line are used for that run only.
 
