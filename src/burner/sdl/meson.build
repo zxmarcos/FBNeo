@@ -46,7 +46,9 @@ frontend_inc = [
 ]
 frontend_deps = [
     dependency('SDL2_image'),
-    dependency('opengl'),
+    # libGL.so.1 on Linux, which Mesa installs: the libOpenGL.so.0 of 'opengl'
+    # (glvnd) is missing on many systems, the Raspberry Pi OS among them
+    dependency(host_machine.system() == 'windows' ? 'opengl' : 'gl'),
 ]
 
 if get_option('sdl_gui') == 'imgui'
