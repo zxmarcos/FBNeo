@@ -181,6 +181,6 @@ jobs:
           The game selector opens when no game is given on the command line; the ROM paths are set in Misc > ROM Paths. See README-SDL.md for the menus and the keys.
 
           - **Windows x86_64** (\`windows-x86_64.zip\`): unzip and run \`fbneo.exe\`. The SDL2 and Visual C++ runtime DLLs are included.
-          - **Linux x86_64** and **Linux arm64** (\`linux-*.tar.gz\`): Ubuntu 22.04 or later, Debian 12 or later. The arm64 build is for the Raspberry Pi 4 and later with a 64-bit OS (Raspberry Pi OS bookworm or later). Install SDL2 first: \`sudo apt install libsdl2-2.0-0 libsdl2-image-2.0-0\`, then \`tar xzf fbneo-sdl2-imgui-linux-*.tar.gz\` and \`./fbneo/fbneo\`. The configuration is kept in \`~/.local/share/fbneo\`.
+          - **Linux x86_64** and **Linux arm64** (\`linux-*.tar.gz\`): Ubuntu 22.04 or later, Debian 12 or later. The arm64 build is for the Raspberry Pi 4 and later with a 64-bit OS (Raspberry Pi OS bookworm or later). Install SDL2 and libGL first: \`sudo apt install libsdl2-2.0-0 libsdl2-image-2.0-0 libgl1\`, then \`tar xzf fbneo-sdl2-imgui-linux-*.tar.gz\` and \`./fbneo/fbneo\`. The configuration is kept in \`~/.local/share/fbneo\`.
           EOF
           gh release create "${{ github.ref_name }}" dist/* --title "SDL2 + ImGui (${{ github.ref_name }})" --notes-file notes.md --prerelease
