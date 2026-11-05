@@ -232,6 +232,7 @@ drivers = {
     'd_toypop.cpp': ['m68000', 'm6809', 'namco_snd', 'namcoio'],
     'd_tsamurai.cpp': ['ay8910', 'dac', 'z80'],
     'd_tubep.cpp': ['ay8910', 'm6800', 'msm5205', 'resnet', 'z80'],
+    'd_tx1.cpp': ['8255ppi', 'ay8910', 'nec', 'resnet', 'z80'],
     'd_usgames.cpp': ['ay8910', 'm6809'],
     'd_vampire.cpp': ['ay8910', 'm6502', 'm6809', 'pit8253'],
     'd_vastar.cpp': ['ay8910', 'z80'],
