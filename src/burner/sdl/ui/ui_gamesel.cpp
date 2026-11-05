@@ -927,7 +927,8 @@ static bool GroupNode(const char* pszLabel, int nGroup, UINT64 nMask, int nExpan
 		nLoadMenuExpand &= ~nExpandBit;
 	}
 
-	ImGui::SameLine();
+	// the checkbox right after the arrow, where the label of the node would be
+	ImGui::SameLine(0.0f, 0.0f);
 	// shown = not hidden: the checkbox is mixed when only some are shown
 	ImU64 nShown = ~GameListFilterValue(nGroup) & nMask;
 	if (ImGui::CheckboxFlags(pszLabel, &nShown, nMask)) {
@@ -940,6 +941,8 @@ static bool GroupNode(const char* pszLabel, int nGroup, UINT64 nMask, int nExpan
 
 static void FilterCheckbox(const GameListFilter* f)
 {
+	// no arrow: the checkbox lines up with the ones of the nodes next to it
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing());
 	ImU64 nShown = ~GameListFilterValue(f->nGroup) & f->nMask;
 	if (ImGui::CheckboxFlags(f->pszName, &nShown, f->nMask)) {
 		GameListFilterSet(f->nGroup, f->nMask, (nShown & f->nMask) == f->nMask);
@@ -978,6 +981,11 @@ static void DrawFilterGroup(const char* pszLabel, int nGroup, int nExpandBit)
 
 static void DrawFilters()
 {
+	// a compact tree: the checkboxes about as tall as the text, the rows closer
+	const ImGuiStyle& style = ImGui::GetStyle();
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, style.FramePadding.y * 0.25f));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, style.ItemSpacing.y * 0.5f));
+
 	bool bFavorites = nLoadMenuFavoritesFilter != 0;
 	if (ImGui::Checkbox("Favorites only", &bFavorites)) {
 		nLoadMenuFavoritesFilter = bFavorites;
@@ -988,6 +996,8 @@ static void DrawFilters()
 	DrawFilterGroup("Family", GAMELIST_FILTER_FAMILY, 1 << 2);
 	DrawFilterGroup("Genre", GAMELIST_FILTER_GENRE, 1 << 3);
 	DrawFilterGroup("Hardware", GAMELIST_FILTER_HARDWARE, 1 << 4);
+
+	ImGui::PopStyleVar(2);
 }
 
 // ----------------------------------------------------------------------------
@@ -1352,7 +1362,8 @@ void UiGameSelDraw(bool bOverRunningGame)
 			ImGui::TableNextRow();
 
 			ImGui::TableNextColumn();
-			if (ImGui::BeginChild("##filters", ImVec2(0.0f, fMain - style.CellPadding.y * 2.0f))) {
+			// scrolls sideways when the column is too narrow for the deepest names
+			if (ImGui::BeginChild("##filters", ImVec2(0.0f, fMain - style.CellPadding.y * 2.0f), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar)) {
 				DrawFilters();
 			}
 			ImGui::EndChild();
