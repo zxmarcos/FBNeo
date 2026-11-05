@@ -109,6 +109,21 @@ static int SDLSoundCheck()
 			return 0;
 		}
 
+	// A frame per call while the sound is at most nMaxLag segments behind: SDL
+	// takes the sound a buffer at a time (11.6 ms with 512 samples at 44.1 kHz),
+	// and against a loop paced by the vsync (16.7 ms at 60 Hz) the position
+	// asks for 0 frames, then 2, of which only the last is drawn. Further
+	// behind, all the frames to catch up.
+	int nCount = nPlaySeg - nSDLFillSeg;
+	if (nCount < 0) {
+		nCount += nAudSegCount;
+	}
+	int nMaxLag = nAudSegCount - 3 < 2 ? nAudSegCount - 3 : 2;
+	if (nCount > 1 && nCount <= nMaxLag + 1) {
+		nPlaySeg = nSDLFillSeg;
+		WRAP_INC(nPlaySeg);
+	}
+
 	// work out which seg we will fill next
 	nFollowingSeg = nSDLFillSeg;
 	WRAP_INC(nFollowingSeg);

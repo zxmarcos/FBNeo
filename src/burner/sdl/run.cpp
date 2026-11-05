@@ -10,7 +10,6 @@
 #include <sys/time.h>
 #endif
 
-static unsigned int nDoFPS = 0;
 bool bAltPause = 0;
 
 int bAlwaysDrawFrames = 0;
@@ -82,29 +81,44 @@ int StatedAuto(int bSave)
 
 char fpsstring[20];
 
-static time_t fpstimer;
+// The frames emulated in the last second, as the Win32 build: the skipped
+// ones count, FFWD too. clock() was the CPU time on Linux, not the real one.
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#define FPS_COUNTER()	SDL_GetPerformanceCounter()
+#define FPS_FREQUENCY()	SDL_GetPerformanceFrequency()
+#else
+#define FPS_COUNTER()	((Uint64)SDL_GetTicks())
+#define FPS_FREQUENCY()	((Uint64)1000)
+#endif
+
+static Uint64 nFpsStart, nFpsLast;
 static unsigned int nPreviousFrames;
 
 static void DisplayFPSInit()
 {
-	nDoFPS = 0;
-	fpstimer = 0;
-	nPreviousFrames = nFramesRendered;
+	nFpsStart = nFpsLast = FPS_COUNTER();
+	nPreviousFrames = nFramesEmulated;
 }
 
 static void DisplayFPS()
 {
-	time_t temptime = clock();
-	double fps = (double)(nFramesRendered - nPreviousFrames) * CLOCKS_PER_SEC / (temptime - fpstimer);
-	if (bAppDoFast) {
-		fps *= nFastSpeed + 1;
-	}
-	if (fpstimer && temptime - fpstimer > 0) { // avoid strange fps values
-		sprintf(fpsstring, "%2.2lf", fps);
+	Uint64 nFreq = FPS_FREQUENCY();
+	Uint64 nNow = FPS_COUNTER();
+	bool bGap = nNow - nFpsLast > nFreq / 2;	// paused, or in the menu: start again
+	nFpsLast = nNow;
+	if (bGap) {
+		nFpsStart = nNow;
+		nPreviousFrames = nFramesEmulated;
+		return;
 	}
 
-	fpstimer = temptime;
-	nPreviousFrames = nFramesRendered;
+	double dt = (double)(nNow - nFpsStart) / nFreq;
+	if (dt < 1.0) {
+		return;
+	}
+	snprintf(fpsstring, sizeof(fpsstring), "%2.2lf", (nFramesEmulated - nPreviousFrames) / dt);
+	nFpsStart = nNow;
+	nPreviousFrames = nFramesEmulated;
 }
 
 
@@ -342,10 +356,7 @@ static int RunFrame(int bDraw, int bPause)
 #endif
 
 	if (bAppShowFPS) {
-		if (nDoFPS < nFramesRendered) {
-			DisplayFPS();
-			nDoFPS = nFramesRendered + 30;
-		}
+		DisplayFPS();
 	}
 
 	return 0;
