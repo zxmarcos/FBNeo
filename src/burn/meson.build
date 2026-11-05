@@ -47,6 +47,9 @@ driverlist_h = custom_target(
         '-l', meson.current_build_dir() / 'gamelist.txt',
         '-f', driverlist_manifest,
     ],
+    # the drivers are read from the manifest, so meson doesn't see them: a
+    # driver added, renamed or removed in a file has to remake the list
+    depend_files: driver_files_abs + files('../dep/scripts/gamelist.py'),
 )
 
 burn_sources += driverlist_h
